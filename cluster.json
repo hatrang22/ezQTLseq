@@ -1,0 +1,465 @@
+{
+    "__default__" :
+    {
+        "jobname"   : "{rule}",
+        "time"      : "06:00:00",
+        "cores"     : 1,
+        "mem"       : "6g",
+        "out"       : "{rule}.out"
+    },
+
+    "trim_and_merge_pe" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "06:00:00",
+        "cores"     : 4,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "mergePE" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "22g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "merge_bams" :
+    {
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "16g"
+    },
+
+    "freebayes" :
+    {
+        "jobname"   : "{rule}",
+        "time"      : "95:30:00",
+        "cores"     : 1,
+        "mem"       : "24g"
+    },
+
+    "freebayes_parallel" :
+    {
+        "time"      : "95:30:00",
+        "cores"     : 20,
+        "mem"       : "24g"
+    },
+
+    "fastp"  :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "08:00:00",
+        "cores"     : 4,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "trim_and_merge_pe"  :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "08:00:00",
+        "cores"     : 4,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "cutadapt_pe"  :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 4,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "fastqc_se" :
+    {
+	    "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "04:00:00",
+	    "cores"     : 1,
+	    "mem"       : "4g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "fastqc_pe" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "04:00:00",
+        "cores"     : 2,
+        "mem"       : "4g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "multiqc_fastqc" :
+    {
+        "time"      : "06:00:00",
+        "cores"     : 2,
+        "mem"       : "4g"
+    },
+
+    "bowtie2_index" :
+    {
+        "time"      : "10:00:00",
+        "cores"     : 1,
+        "mem"       : "32g"
+    },
+
+    "bowtie2_se" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "32g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "bowtie2_pe" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "32g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "bwa_index" :
+    {
+        "time"      : "20:00:00",
+        "cores"     : 1,
+        "mem"       : "48g"
+    },
+
+    "bwa_se" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "48:00:00",
+        "cores"     : 16,
+        "mem"       : "32g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "bwa_pe" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "32:00:00",
+        "cores"     : 8,
+        "mem"       : "32g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+    "bwa_spet" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "32:00:00",
+        "cores"     : 16,
+        "mem"       : "32g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+
+    "bam_stats" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "03:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "remove_duplicates_spet" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "48:00:00",
+        "cores"     : 10,
+        "mem"       : "24g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+    
+    "remove_duplicates_pe" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "24:00:00",
+        "cores"     : 10,
+        "mem"       : "24g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+    "keep_duplicates" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "star_index" :
+    {
+        "time"      : "10:00:00",
+        "cores"     : 20,
+        "mem"       : "36g"
+    },
+
+    "star_index2" :
+    {
+        "time"      : "10:00:00",
+        "cores"     : 20,
+        "mem"       : "32g"
+    },
+
+    "star_pass1" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "48g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "star_pass2" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 10,
+        "mem"       : "48g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "parse_bam_with_bed" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "varscan" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "merge_bams" :
+    {
+        "time"      : "24:00:00",
+        "cores"     : 20,
+        "mem"       : "48g"
+    },
+
+    "annovar" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "alternative_proteins" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "cov_track" :
+    {
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g"
+    },
+
+    "make_report" :
+    {
+        "time"      : "2:00:00",
+        "cores"     : 1,
+        "mem"       : "4g"
+    },
+
+    "make_markdown" :
+    {
+        "time"      : "2:00:00",
+        "cores"     : 1,
+        "mem"       : "4g"
+    },
+
+    "vcf4_to_avinput" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "whatshap" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}",
+        "time"      : "12:00:00",
+        "cores"     : 1,
+        "mem"       : "8g",
+        "out"       : "{rule}_{wildcards.sample}.out"
+    },
+
+    "multiqc_bam" :
+    {
+        "cores"     : 2,
+        "mem"       : "4g"
+    },
+
+    "bams_list" :
+    {
+        "time"      : "00:05:00",
+        "cores"         : 1,
+        "mem"       : "1g"
+    },
+
+    "gatk4_hc" :
+    {
+        "jobname"   : "{rule}_{wildcards.sample}-{wildcards.mychr}",
+        "time"      : "72:00:00",
+        "cores"     : 10,
+        "mem"       : "12g",
+        "out"       : "{rule}_{wildcards.sample}-{wildcards.mychr}.out"
+    },
+
+    "gatk4_combine_calls" :
+    {
+        "time"      : "48:00:00",
+        "cores"     : 10,
+        "mem"       : "10g"
+    },
+
+    "gatk4_gdb" :
+    {
+        "jobname"   : "{rule}_{wildcards.mychr}",
+        "time"      : "48:00:00",
+        "cores"     : 12,
+        "mem"       : "16g",
+        "out"       : "{rule}_{wildcards.mychr}.out"
+    },
+
+    "gatk4_gc" :
+    {
+        "jobname"   : "{rule}_{wildcards.mychr}",
+        "time"      : "92:00:00",
+        "cores"     : 2,
+        "mem"       : "10g",
+        "out"       : "{rule}_{wildcards.mychr}.out"
+    },
+
+    "gatk4_gvcf_map_file" :
+    {
+        "jobname"   : "{rule}_{wildcards.mychr}",
+        "out"       : "{rule}_{wildcards.mychr}.out"
+    },
+
+    "combinevcf" :
+    {
+        "time"      : "32:00:00",
+        "cores"     : 2,
+        "mem"       : "16g"
+    },
+
+    "gatk4_select_snps_variants" :
+    {
+         "time"      : "08:00:00",
+        "cores"     : 10,
+        "mem"       : "10g"
+    },
+
+    "gatk4_select_indels_variants" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 10,
+        "mem"       : "10g"
+    },
+
+    "gatk4_filterSnps" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+    },
+
+    "gatk4_filterIndels" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+    },
+
+    "gatk4_snps_quality_graphe_pdf" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "32g"
+    },
+
+    "gatk4_indels_quality_graphe_pdf" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+    },
+
+   "keep_biallelic" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+   },
+
+   "filter_by_dp" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+   },
+
+   "gatk4_no_missing" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+   },
+
+   "keep_variant_Parents" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+   },
+
+   "keep_extract_bulks" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "10g"
+   },
+
+   "vcf2table" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+   },
+
+   "do_qtlseqR" :
+   {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+   }
+}
+
+
+
+

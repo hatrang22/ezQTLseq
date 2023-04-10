@@ -1,0 +1,90 @@
+# path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName  fq1  fq2 ...)
+samplesfile : "samples.csv"
+fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
+outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
+GENOME      : "Sol_mic_1.0.fa"
+GENOME_FAI  : "Sol_mic_1.0.fa.fai"
+REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_Genome/Microtom"
+# Singularity bind folders (Genotoul):
+#
+BIND        : "-B /work2/project/gafl "
+#
+# remove PCR duplicates for PE
+bam_remove_duplicate : "y" # must be y or n
+
+###################trim probe 
+probe_length: 40
+
+######### gatk DP filtering
+dp_p: 5
+min_dp: 50
+max_dp: 1400
+#
+########## do_qtl.R
+R_bulk_size: 38
+S_bulk_size: 38
+#
+nb_takagi_reps: 10000
+window_size: 1000000
+filter_threshold: 0.1
+false_discovery_rate_G: 0.1
+#
+min_depth_in_bulk: 100
+max_depth_in_bulk: 1400
+##
+##
+#
+########## GATK filtering from good practices:
+## https://gatk.broadinstitute.org/hc/en-us/articles/360035890471-Hard-filtering-germline-short-variants
+## Quality QUAL
+## QualByDepth (QD):                      https://gatk.broadinstitute.org/hc/en-us/articles/360036711511-QualByDepth
+## FisherStrand (FS):                     https://gatk.broadinstitute.org/hc/en-us/articles/360037592371-FisherStrand
+## StrandOddsRatio (SOR):                 https://gatk.broadinstitute.org/hc/en-us/articles/360037592151-StrandOddsRatio
+## RMSMappingQuality (MQ):                https://gatk.broadinstitute.org/hc/en-us/articles/360036711191-RMSMappingQuality
+## MappingQualityRankSumTest (MQRankSum): https://gatk.broadinstitute.org/hc/en-us/articles/360037592711-MappingQualityRankSumTest
+## ReadPosRankSumTest (ReadPosRankSum):   https://gatk.broadinstitute.org/hc/en-us/articles/360036360852-ReadPosRankSumTest
+##
+## https://gatk.broadinstitute.org/hc/en-us/articles/360035531112?id=2806
+## For reference, here are some basic filtering thresholds to improve upon.
+##  SNPs
+snp_QUAL_filter : "< 30.0"
+snp_QD_filter : "< 2.0"
+snp_FS_filter : "> 60.0"
+snp_MQ_filter : "< 40.0"
+snp_SOR_filter: "> 3.0"
+snp_MQRankSum_filter : "< -12.5"
+snp_ReadPosRankSum_filter : "< -8.0"
+##
+##
+#
+# ---------------------- singularity config -----------------------------
+# # singularity images location
+fastqc_bin    : "/work2/project/gafl/tools/containers/fastqc_V0.11.8.sif"
+multiqc_bin   : "/work2/project/gafl/tools/containers/multiqc_v1.7.sif"
+fastp_bin     : "/work2/project/gafl/tools/containers/fastp_0.20.0.sif"
+samtools_bin  : "/work2/project/gafl/tools/containers/samtools_v1.9.sif"
+bwa_bin       : "/work2/project/gafl/tools/containers/bwa_0.7.17.sif"
+sambamba_bin  : "/work2/project/gafl/tools/containers/sambamba_v0.7.1.sif"
+gatk4_bin     : "/work2/project/gafl/tools/containers/gatk4_v4.1.4.1.sif"
+R_bin         : "/work2/project/gafl/tools/containers/R_base_V3.6.0.sif"
+QTL_bin       : "/work2/project/gafl/tools/containers/R_QTLseqr_v0.7.5.2.sif"
+gatk_bin      : "/work2/project/gafl/tools/containers/gatk4_v4.1.9.0.sif"
+bcftools_bin  : "/work2/project/gafl/tools/containers/bcftools_v1.11.sif"
+nudup_bin     : "/work2/project/gafl/tools/containers/nudup_v2.2.sif"
+bamUtil_bin   : "/work2/project/gafl/tools/containers/bamutil.sif"
+
+# singularity bind for IFB core the home is in: /shared/mfs/data/home
+# BIND        : "-B /shared/mfs/data/home/jlagnel"
+# if no binding:
+# Bind gafl01:
+
+#BIND        : "-B /work/project/gafl,/nosave/project/gafl,/work/project/gafl"
+
+# singularity modules only for genotoul
+
+#MODULES     : "module load system/singularity-2.5.1"
+
+# if singularity is not as module
+MODULES     : ""
+# --------------------------------------------------------
+

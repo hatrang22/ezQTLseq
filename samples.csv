@@ -1,0 +1,5 @@
+SampleName	mode	fq1	fq2
+P1	se	ParMaroc_G04_R1_L001.fastq.gz	ParMaroc_G04_R2_L001.fastq.gz
+P2	pe	ParC438_F04_R1_L001.fastq.gz	ParC438_F04_R2_L001.fastq.gz
+R	spet	P11_F2_M_C438_R_AB_A10_R1_L001.fastq.gz	P11_F2_M_C438_R_AB_A10_R2_L001.fastq.gz 
+S	spet	P11_F2_M_C438_S_AB_E10_R1_L001.fastq.gz	P11_F2_M_C438_S_AB_E10_R2_L001.fastq.gz 
