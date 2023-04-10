@@ -24,3 +24,5 @@ snakemake --configfile config.yaml -s Snakefile.smk -np
 ```bash
 ./run_ezqtlseq_pipeline.slurm
 ```
+
+The pipeline workflow is available [here](dag.pdf).
