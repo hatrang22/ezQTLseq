@@ -10,7 +10,7 @@ python gen_samples.py
 
 ## Clean outputs
 ```bash
-rm -rf logs/ out/
+rm -rf logs/ out/ .snakemake/
 ```
 
 ## Quicktest with dryrun

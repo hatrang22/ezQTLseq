@@ -9,7 +9,7 @@ REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_
 #
 BIND        : "-B /work2/project/gafl "
 #
-# remove PCR duplicates for PE
+# remove PCR duplicates for paired end(PE)
 bam_remove_duplicate : "y" # must be y or n
 
 ###################trim probe 
@@ -70,7 +70,9 @@ R_bin         : "/work2/project/gafl/tools/containers/R_base_V3.6.0.sif"
 QTL_bin       : "/work2/project/gafl/tools/containers/R_QTLseqr_v0.7.5.2.sif"
 gatk_bin      : "/work2/project/gafl/tools/containers/gatk4_v4.1.9.0.sif"
 bcftools_bin  : "/work2/project/gafl/tools/containers/bcftools_v1.11.sif"
-nudup_bin     : "/work2/project/gafl/tools/containers/nudup_v2.2.sif"
+
+nudup_bin     : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/containers/nudup_v2.3.3.sif"  # hatrang's container
+
 bamUtil_bin   : "/work2/project/gafl/tools/containers/bamutil.sif"
 
 # singularity bind for IFB core the home is in: /shared/mfs/data/home
