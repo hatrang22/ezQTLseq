@@ -63,7 +63,6 @@ with open(config["REFPATH"]+"/"+config["GENOME_FAI"],'r') as fh:
       #CHRS.append(line)
 fh.close()
 
-
 ###################################################################################
 rule final_outs:
     input:
@@ -71,22 +70,23 @@ rule final_outs:
         # expand("{outdir}/fastqc/{sample[0]}_{sample[1]}.OK.done", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         "{outdir}/multiqc/multiqc_report_fastqc.html".format(outdir=config["outdir"]),
         # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
+        # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam.bai", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         # expand("{outdir}/mapped/{sample[0]}_{sample[1]}_sorted.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        # expand("{outdir}/mapped/{sample[0]}_{sample[1]}.stats.txt", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
+        #expand("{outdir}/mapped/{sample[0]}_{sample[1]}.stats.txt", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         "{outdir}/multiqc/multiqc_report_bam.html".format(outdir=config["outdir"]),
         #"{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]),
-        #expand("{outdir}/variant/gatk_gvcf/{sample}-{mychr}.g.vcf.gz",outdir=config["outdir"],sample=samples['SampleName'], mychr=CHRS),
-        #expand("{outdir}/variant/gvcf_{mychr}_list.map", outdir=config["outdir"], mychr=CHRS),
+        #expand("{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}-{mychr}.g.vcf.gz",outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode']), mychr=CHRS),
+        # expand("{outdir}/variant/gvcf_{mychr}_list.map", outdir=config["outdir"], mychr=CHRS),
         #expand("{outdir}/variant/gatk_genomicsdb_{mychr}.ok", outdir=config["outdir"], mychr=CHRS),
-        #"{outdir}/variant/gatk_all.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.vcf.gz".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.score_snps.pdf".format(outdir=config["outdir"]),
-        #"{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"]),
-        #"{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"]),
-        #"{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"]),
-        #"{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"]),
-        #"{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"]),
+        # "{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.keep_snps.stats.txt".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"]),
+        "{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"]),
         # "{outdir}/Rqtl/6.Takagi.jpg".format(outdir=config["outdir"]),
         # "{outdir}/Rqtl/qtlsT.csv".format(outdir=config["outdir"]),
         # "{outdir}/Rqtl/qtlsG.csv".format(outdir=config["outdir"]),
@@ -260,7 +260,7 @@ rule bwa_mapping_wow_merge:
         idx = config["REFPATH"] + "/" + config["GENOME"] + ".bwt"
     output:
         bam   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam".format(outdir=config["outdir"]),
-        #bai   = "{outdir}/mapped/raw/{{sample}}_sorted.raw.bam.bai".format(outdir=config["outdir"]),
+        bai   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam.bai".format(outdir=config["outdir"]),
     params:
         modules           = config["MODULES"],
         fastp_bin         = config["fastp_bin"],
@@ -278,10 +278,11 @@ rule bwa_mapping_wow_merge:
         """
         if [[ "{params.mode}" != "pe" ]]; then
 
-            singularity exec {params.bind} {params.bwa_bin} bwa mem -t {threads} -K 100000000 -R '{params.rg}' {params.idxbase} {input.R}|singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 -o {output.bam}|singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}
+            singularity exec {params.bind} {params.bwa_bin} bwa mem -t {threads} -K 100000000 -R '{params.rg}' {params.idxbase} {input.R}|singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048|singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}
             singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}
+            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
             rm -rf {input.R1} {input.R2}  # remove pseudo-files of the previous rule
-        
+
         else
             #merge PE
             singularity exec {params.bind} {params.fastp_bin} fastp \
@@ -316,13 +317,15 @@ rule bwa_mapping_wow_merge:
             -R '{params.rg}' \
             {params.idxbase} \
             {params.outtmp}.merged.tmp.fastq.gz \
-            | singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
+            |singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
             |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {params.outtmp}.m.tmp.bam -
             rm -rf {input.R}  # remove pseudo-file of the previous rule
 
             # merge bams
             singularity exec {params.bind} {params.samtools_bin} samtools merge {output.bam} {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam && rm -f {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam
             singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}
+            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
+
             rm -rf {params.outtmp}.merged.tmp.fastq.gz
             rm -rf {params.outtmp}_1.unmerged.tmp.fastq.gz  {params.outtmp}_2.unmerged.tmp.fastq.gz
         fi
@@ -427,6 +430,7 @@ rule gatk4_ref_dict:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} gatk CreateSequenceDictionary -R {input.ref}
@@ -435,27 +439,19 @@ rule gatk4_ref_dict:
         """
 # ------------------  parrallel by chr -----------------
 # 3-2) HaplotypeCaller for each sample and each chr
-
-# if smode == "spet":
-#     ruleorder: gatk4_hc_spet > gatk4_hc_pe_se
-# else:
-#     ruleorder: gatk4_hc_pe_se > gatk4_hc_spet
-
-
-rule gatk4_hc_spet:
+rule gatk4_hc:
     input:
-        #"{outdir}/variant/chrslist.OK".format(outdir=config["outdir"]),
-        bam     = "{outdir}/mapped/{{sample}}_clipped.bam".format(outdir=config["outdir"]),
-        #refdict = "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]),
+        bam     = "{outdir}/mapped/{{sample}}_{{mode}}_sorted.bam".format(outdir=config["outdir"]),
+        #refdict = "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"])
     output:
-        gvcf="{outdir}/variant/gatk_gvcf/{{sample}}-{{mychr}}.g.vcf.gz".format(outdir=config["outdir"])
+        gvcf="{outdir}/variant/gatk_gvcf/{{sample}}_{{mode}}-{{mychr}}.g.vcf.gz".format(outdir=config["outdir"])
     params:
         ch="{mychr}",
         ref = config["REFPATH"] + "/" + config["GENOME"],
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 10
+    threads: 16
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -466,42 +462,17 @@ rule gatk4_hc_spet:
         --output {output.gvcf}
         exit 0
         """
-rule gatk4_hc_pe_se:
-    input:
-        #"{outdir}/variant/chrslist.OK".format(outdir=config["outdir"]),
-        bam     = "{outdir}/mapped/{{sample}}_sorted.bam".format(outdir=config["outdir"]),
-        refdict = "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]),
-    output:
-        gvcf="{outdir}/variant/gatk_gvcf/{{sample}}-{{mychr}}.g.vcf.gz".format(outdir=config["outdir"])
-    params:
-        ch="{mychr}",
-        ref = config["REFPATH"] + "/" + config["GENOME"],
-        bind = config["BIND"],
-        samtools_bin = config["samtools_bin"],
-        gatk4_bin = config["gatk4_bin"]
-    threads: 1
-    shell:
-        """
-        singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx24G -XX:ParallelGCThreads={threads}' HaplotypeCaller \
-        --reference {params.ref} \
-        --input {input.bam} \
-        -ERC GVCF -L {params.ch} \
-        --output {output.gvcf}
-        exit 0
-        """
 
 # 3-3) Generate a map (text file) of gvcf files for each chr
 rule gatk4_gvcf_map_file:
     input:
-        gvcfs = expand("{outdir}/variant/gatk_gvcf/{sample}-{{mychr}}.g.vcf.gz", outdir=config["outdir"], sample=samples['SampleName']),
-        
+        gvcfs = expand("{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}-{{mychr}}.g.vcf.gz", outdir=config["outdir"], sample=zip(samples['SampleName'], samples['mode'])),   
     output:
         gvcfmap      = "{outdir}/variant/gvcf_{{mychr}}_list.map".format(outdir=config["outdir"]),
     params:
-        ch="{mychr}",
+        ch          ="{mychr}",
         #csv         = expand("{sample}\t{outdir}/variant/gatk_gvcf/{sample}-{{mychr}}.g.vcf.gz", outdir=config["outdir"], sample=samples['SampleName']),
-        csv         = expand("{sample}\t{outdir}/variant/gatk_gvcf/{sample}", outdir=config["outdir"], sample=samples['SampleName']),
+        csv         = expand("{sample[0]}\t{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}", outdir=config["outdir"], sample=zip(samples['SampleName'],samples['mode'])),
         bamsp       = "{outdir}/mapped".format(outdir=config["outdir"]),
         outlist     = config["outdir"]
     threads: 1
@@ -520,7 +491,7 @@ rule gatk4_gvcf_map_file:
 # see: https://gatk.broadinstitute.org/hc/en-us/articles/360040096732-GenomicsDBImport
 rule gatk4_gdb:
     input:
-        gvcf = expand("{outdir}/variant/gatk_gvcf/{sample}-{{mychr}}.g.vcf.gz",outdir=config["outdir"],sample=samples['SampleName']),
+        #gvcfs = expand("{outdir}/variant/gatk_gvcf/{sample[0]}-{{mychr}}_{sample[1]}.g.vcf.gz", outdir=config["outdir"], sample=zip(samples['SampleName'], samples['mode'])),
         gvcfmap = "{outdir}/variant/gvcf_{{mychr}}_list.map".format(outdir=config["outdir"])
     output:
         "{outdir}/variant/gatk_genomicsdb_{{mychr}}.ok".format(outdir=config["outdir"])
@@ -537,7 +508,7 @@ rule gatk4_gdb:
         """
         mkdir -p {params.tmpdir}
         singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx8G' GenomicsDBImport \
+        gatk --java-options '-Xmx8g' GenomicsDBImport \
         --genomicsdb-workspace-path {params.gdb} \
         --batch-size 200 \
         -L {params.ch} \
@@ -560,7 +531,7 @@ rule gatk4_gc:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 1
+    threads: 2
     message: "GATK4 genotype_variants vcf\n"
     shell:
         """
@@ -586,6 +557,7 @@ rule combinevcf:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
+    threads: 2
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -740,6 +712,7 @@ rule gatk4_snps_quality_graphe_pdf:
     params:
         bind = config["BIND"],
         R_bin = config["R_bin"]
+    threads: 2
     shell:
         """
         singularity exec {params.bind} {params.R_bin} \
@@ -784,7 +757,7 @@ rule filter_by_dp:
         min_dp = config["min_dp"],
         max_dp = config["max_dp"],
         dp_p = config["dp_p"]
-    threads: 1
+    threads: 2
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -804,7 +777,7 @@ rule gatk4_no_missing:
         ref = config["REFPATH"] + "/" + config["GENOME"],
         bind = config["BIND"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 1
+    threads: 2
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -825,22 +798,25 @@ rule keep_variant_Parents:
         ref = config["REFPATH"] + "/" + config["GENOME"],
         bind = config["BIND"],
         gatk_bin = config["gatk_bin"]
+    threads: 2
     shell:
         """
         singularity exec {params.bind} {params.gatk_bin} \
         java -jar /opt/jvarkit_github/jvarkit/dist/vcffilterjdk.jar \
-        -e 'return !variant.getGenotype("P1").sameGenotype(variant.getGenotype("P2"));' -o {output.polymorph} {input.snp}#keep only the polymorph different with the parents 
+        -e 'return !variant.getGenotype("P1").sameGenotype(variant.getGenotype("P2"));' -o {output.polymorph} {input.snp}
+        #keep only the polymorph different with the parents 
         """
 ## 4-5) ---------keep and extract R and S bulks ----------------
 rule keep_extract_bulks:
-     input:
+    input:
         parents="{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"])
-     output:
+    output:
         bulks="{outdir}/variant/gatk_all.filter_bulk.vcf.gz".format(outdir=config["outdir"])
-     params:
+    params:
         bcftools_bin = config["bcftools_bin"],
         bind = config["BIND"]
-     shell:
+    threads: 2
+    shell:
         """
         singularity exec {params.bind} {params.bcftools_bin} bcftools view -s R,S {input.parents} -Oz -o {output.bulks}
         singularity exec {params.bind} {params.bcftools_bin} bcftools index {output.bulks} -t
@@ -884,6 +860,7 @@ rule vcf2table:
         -F CHROM -F POS -F REF -F ALT -GF AD -GF DP -GF GQ -GF PL \
         -O {output.rs}
         """
+
 ## 4-8 ---------run the script Rqtl -----------------
 rule do_qtlseqR:
     input:
@@ -906,6 +883,7 @@ rule do_qtlseqR:
         max_depth_in_bulk = config["max_depth_in_bulk"],
         bind = config["BIND"],
         QTL_bin = config["QTL_bin"]
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.QTL_bin} Rscript do_qtl.R \

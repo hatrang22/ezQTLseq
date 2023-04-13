@@ -70,28 +70,18 @@
         "cores"     : 2,
         "mem"       : "4g"
     },
-
-    "bams_list" :
+    "gatk_ref_dict" :
     {
-        "time"      : "00:05:00",
-        "cores"         : 1,
-        "mem"       : "1g"
+        "cores"     : 1,
+        "mem"       : "4g"
     },
-
     "gatk4_hc" :
     {
         "jobname"   : "{rule}_{wildcards.sample}-{wildcards.mychr}",
         "time"      : "72:00:00",
-        "cores"     : 10,
+        "cores"     : 16,
         "mem"       : "12g",
         "out"       : "{rule}_{wildcards.sample}-{wildcards.mychr}.out"
-    },
-
-    "gatk4_combine_calls" :
-    {
-        "time"      : "48:00:00",
-        "cores"     : 10,
-        "mem"       : "10g"
     },
 
     "gatk4_gdb" :
@@ -115,6 +105,7 @@
     "gatk4_gvcf_map_file" :
     {
         "jobname"   : "{rule}_{wildcards.mychr}",
+        "cores"     : 1,
         "out"       : "{rule}_{wildcards.mychr}.out"
     },
 
@@ -132,13 +123,6 @@
         "mem"       : "10g"
     },
 
-    "gatk4_select_indels_variants" :
-    {
-        "time"      : "08:00:00",
-        "cores"     : 10,
-        "mem"       : "10g"
-    },
-
     "gatk4_filterSnps" :
     {
         "time"      : "08:00:00",
@@ -146,11 +130,18 @@
         "mem"       : "10g"
     },
 
-    "gatk4_filterIndels" :
+    "gatk4_snps_raw_score_table" :
     {
         "time"      : "08:00:00",
         "cores"     : 2,
-        "mem"       : "10g"
+        "mem"       : "32g"
+    }, 
+
+    "gatk4_snps_filtered_score_table" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "32g"
     },
 
     "gatk4_snps_quality_graphe_pdf" :
@@ -158,13 +149,6 @@
         "time"      : "08:00:00",
         "cores"     : 2,
         "mem"       : "32g"
-    },
-
-    "gatk4_indels_quality_graphe_pdf" :
-    {
-        "time"      : "08:00:00",
-        "cores"     : 1,
-        "mem"       : "10g"
     },
 
    "keep_biallelic" :
@@ -201,6 +185,12 @@
         "cores"     : 2,
         "mem"       : "10g"
    },
+   "gatk_stats" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 2,
+        "mem"       : "32g"
+    },
 
    "vcf2table" :
    {

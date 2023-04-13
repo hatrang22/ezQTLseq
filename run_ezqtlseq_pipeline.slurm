@@ -65,7 +65,7 @@ mkdir -p logs
 snakemake --configfile $CONFIG -s $RULES --rulegraph | dot -Tpdf > dag.pdf
 
 # Dry run (simulation)
-# snakemake --configfile $CONFIG -s $RULES -np -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" > snakemake_dryrun.out
+#snakemake --configfile $CONFIG -s $RULES -np -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" > snakemake_dryrun.out
 
 # Full run (if everething is ok: uncomment it)
 snakemake --configfile $CONFIG -s $RULES -p -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" 
