@@ -1,6 +1,7 @@
 # path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName  fq1  fq2 ...)
 samplesfile : "samples.csv"
-fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
+fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/dataset_RdB_H33_pe_spet"
+#fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
 outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
 GENOME      : "Sol_mic_1.0.fa"
 GENOME_FAI  : "Sol_mic_1.0.fa.fai"
@@ -17,7 +18,7 @@ probe_length: 40
 
 ######### gatk DP filtering
 dp_p: 5
-min_dp: 50
+min_dp: 20
 max_dp: 1400
 #
 ########## do_qtl.R
@@ -28,8 +29,8 @@ nb_takagi_reps: 10000
 window_size: 1000000
 filter_threshold: 0.1
 false_discovery_rate_G: 0.1
-#
-min_depth_in_bulk: 100
+
+min_depth_in_bulk: 20
 max_depth_in_bulk: 1400
 ##
 ##

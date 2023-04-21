@@ -68,7 +68,7 @@ snakemake --configfile $CONFIG -s $RULES --rulegraph | dot -Tpdf > dag.pdf
 #snakemake --configfile $CONFIG -s $RULES -np -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" > snakemake_dryrun.out
 
 # Full run (if everething is ok: uncomment it)
-snakemake --configfile $CONFIG -s $RULES -p -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" 
+#snakemake --configfile $CONFIG -s $RULES -p -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" 
 
 
 # If latency problem add to the run:

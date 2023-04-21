@@ -86,11 +86,11 @@ rule final_outs:
         # "{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.keep_snps.stats.txt".format(outdir=config["outdir"]),
-        "{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/6.Takagi.jpg".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/qtlsT.csv".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/qtlsG.csv".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/filtered.csv".format(outdir=config["outdir"]),"{outdir}/Rqtl/stats.txt".format(outdir=config["outdir"])
+        # "{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"]),
+        "{outdir}/Rqtl/6.Takagi.jpg".format(outdir=config["outdir"]),
+        "{outdir}/Rqtl/qtlsT.csv".format(outdir=config["outdir"]),
+        "{outdir}/Rqtl/qtlsG.csv".format(outdir=config["outdir"]),
+        "{outdir}/Rqtl/filtered.csv".format(outdir=config["outdir"]),"{outdir}/Rqtl/stats.txt".format(outdir=config["outdir"])
      
 
 ##################################################################################
@@ -351,6 +351,7 @@ rule remove_or_keep_duplicate:
         outdir       = config["outdir"],
         sambamba_bin = config["sambamba_bin"], # sambamba for markdup
         bam_rm_dup   = config["bam_remove_duplicate"],
+        R2_concat    = "{outdir}/mapped/{{sample}}_R2.fastq.gz".format(outdir=config["outdir"]),
         nudup_bin    = config["nudup_bin"],
         mode         = "{mode}",
         prefix       = "{outdir}/mapped/{{sample}}_{{mode}}".format(outdir=config["outdir"]),
@@ -361,7 +362,8 @@ rule remove_or_keep_duplicate:
     shell: 
         """
         if [[ "{params.mode}" == "spet" ]]; then
-            singularity exec {params.bind} {params.nudup_bin} nudup.py -f {input.R} -o {params.prefix} {input.bam}  
+            cat {input.R} > {params.R2_concat}
+            singularity exec {params.bind} {params.nudup_bin} nudup.py -f {params.R2_concat} -o {params.prefix} {input.bam} && rm {params.R2_concat} 
             singularity exec {params.bind} {params.bamutil_bin} bam TrimBam {params.dedup} {params.outtmp}.clipped.tmp.bam --clip -L {params.probe_length}
             singularity exec {params.bind} {params.samtools_bin} samtools sort -o {output.bam} {params.outtmp}.clipped.tmp.bam
             singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
