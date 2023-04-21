@@ -80,7 +80,7 @@
         "jobname"   : "{rule}_{wildcards.sample}-{wildcards.mychr}",
         "time"      : "72:00:00",
         "cores"     : 16,
-        "mem"       : "12g",
+        "mem"       : "16g",
         "out"       : "{rule}_{wildcards.sample}-{wildcards.mychr}.out"
     },
 
@@ -206,7 +206,3 @@
         "mem"       : "10g"
    }
 }
-
-
-
-
