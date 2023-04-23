@@ -34,6 +34,7 @@ def get_fq1(wildcards):
         f.strip()
         ml.append(config["fq_dir"]+"/"+f)
     return ml
+
 # Get fastq R2. Could have several fastq file for 1 sample
 def get_fq2(wildcards):
     tt=samples.loc[(wildcards.sample), ["fq2"]].dropna()
@@ -44,7 +45,8 @@ def get_fq2(wildcards):
         f.strip()
         ml.append(config["fq_dir"]+"/"+f)
     return ml
-# standardize samples
+
+# Standardize samples
 def standardize_samples(df, valid_mode=["pe", "se", "spet", "spet_no_umi"], require_col=["SampleName", "mode", "fq1", "fq2"]):
     # check column names (all values of require_col must be presented in df)
     if not all([col_name in df.columns for col_name in require_col]):
@@ -66,6 +68,15 @@ def standardize_samples(df, valid_mode=["pe", "se", "spet", "spet_no_umi"], requ
         raise ValueError("Missing UMI file(s) for SPET in the sample file")
 
     return df
+
+# Generate .fai file if not exist
+def gen_fai():
+    path_fai = os.path.join(config['REFPATH'], config['GENOME_FAI'])
+    bind = config["BIND"]
+    samtools_bin = config["samtools_bin"]
+    genome = os.path.join(config["REFPATH"], config["GENOME"])
+    if not os.path.exists(path_fai):
+        shell("singularity exec {bind} {samtools_bin} samtools faidx {genome}")  # create .fai file 
     
 
 ##########################
@@ -74,7 +85,11 @@ def standardize_samples(df, valid_mode=["pe", "se", "spet", "spet_no_umi"], requ
 
 # Read the sample file using pandas lib (sample names+ fastq names) and create index using the sample name
 samples = pd.read_csv(config["samplesfile"], sep='\t', dtype=str, comment='#').set_index(["SampleName"], drop=False)
+# Standardize samples
 samples = standardize_samples(samples)
+
+# Generate .fai file if not exist
+gen_fai()
 
 # Build a chr list based on GENOME_FAI
 CHRS=list()
@@ -244,8 +259,7 @@ rule bwa_index:
        config["REFPATH"] + "/" + config["GENOME"] + ".ann",
        config["REFPATH"] + "/" + config["GENOME"] + ".bwt",
        config["REFPATH"] + "/" + config["GENOME"] + ".pac",
-       config["REFPATH"] + "/" + config["GENOME"] + ".sa",
-       config["REFPATH"] + "/" + config["GENOME"] + ".fai"
+       config["REFPATH"] + "/" + config["GENOME"] + ".sa"
     params:
         bind         = config["BIND"],
         bwa_bin      = config["bwa_bin"],
@@ -253,7 +267,6 @@ rule bwa_index:
     shell:
         """
         singularity exec {params.bind} {params.bwa_bin} bwa index -a bwtsw -b 500000000 {input.genome}
-        singularity exec {params.bind} {params.samtools_bin} samtools faidx {input.genome} # create .fai file 
         """
 
 # 2-2) mapping

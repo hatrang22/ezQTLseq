@@ -8,7 +8,7 @@ GENOME_FAI  : "Sol_mic_1.0.fa.fai"
 REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_Genome/Microtom"
 # Singularity bind folders (Genotoul):
 #
-BIND        : "-B /work2/project/gafl "
+BIND        : "-B /work2/project/gafl"
 #
 # remove PCR duplicates for paired end(PE)
 bam_remove_duplicate : "y" # must be y or n
