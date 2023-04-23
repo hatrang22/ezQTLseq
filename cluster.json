@@ -70,7 +70,7 @@
         "cores"     : 2,
         "mem"       : "4g"
     },
-    "gatk_ref_dict" :
+    "gatk4_ref_dict" :
     {
         "cores"     : 1,
         "mem"       : "4g"
