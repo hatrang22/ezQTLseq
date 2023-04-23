@@ -44,13 +44,37 @@ def get_fq2(wildcards):
         f.strip()
         ml.append(config["fq_dir"]+"/"+f)
     return ml
+# standardize samples
+def standardize_samples(df, valid_mode=["pe", "se", "spet", "spet_no_umi"], require_col=["SampleName", "mode", "fq1", "fq2"]):
+    # check column names (all values of require_col must be presented in df)
+    if not all([col_name in df.columns for col_name in require_col]):
+        raise ValueError(f"Missing column(s) of the sample file. Required columns: {require_col}")
+
+    df['mode'] = df['mode'].apply(lambda x: x.lower())  # convert mode to lowercase
+    # check valid mode (all sample modes of df must be a valid mode)
+    if not all([mode in valid_mode for mode in df['mode'].to_list()]):
+        raise ValueError(f"Unvalid mode found in the sample file. Valid mode: {valid_mode}")
+
+    # check if missing forward read file(s)
+    if any(df.isna()['fq1']):
+        raise ValueError("Missing forward read file(s) in the sample file")
+
+    # check if missing reverse read (or umi) file(s) for pe (or spet)
+    if any(df[df["mode"]=="pe"].isna()['fq2']):
+        raise ValueError("Missing reverse read file(s) for paired end in the sample file")
+    if any(df[df["mode"]=="spet"].isna()['fq2']):
+        raise ValueError("Missing UMI file(s) for SPET in the sample file")
+
+    return df
+    
 
 ##########################
 ## GLOBAL VARIABLES
 ##########################
 
 # Read the sample file using pandas lib (sample names+ fastq names) and create index using the sample name
-samples = pd.read_csv(config["samplesfile"], sep='\t', dtype=str, comment='#').set_index(["SampleName"], drop=False) 
+samples = pd.read_csv(config["samplesfile"], sep='\t', dtype=str, comment='#').set_index(["SampleName"], drop=False)
+samples = standardize_samples(samples)
 
 # Build a chr list based on GENOME_FAI
 CHRS=list()
@@ -72,12 +96,12 @@ rule final_outs:
         # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam.bai", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         # expand("{outdir}/mapped/{sample[0]}_{sample[1]}_sorted.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        #expand("{outdir}/mapped/{sample[0]}_{sample[1]}.stats.txt", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
+        # expand("{outdir}/mapped/{sample[0]}_{sample[1]}.stats.txt", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
         "{outdir}/multiqc/multiqc_report_bam.html".format(outdir=config["outdir"]),
-        #"{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]),
-        #expand("{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}-{mychr}.g.vcf.gz",outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode']), mychr=CHRS),
+        # "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]),
+        # expand("{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}-{mychr}.g.vcf.gz",outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode']), mychr=CHRS),
         # expand("{outdir}/variant/gvcf_{mychr}_list.map", outdir=config["outdir"], mychr=CHRS),
-        #expand("{outdir}/variant/gatk_genomicsdb_{mychr}.ok", outdir=config["outdir"], mychr=CHRS),
+        # expand("{outdir}/variant/gatk_genomicsdb_{mychr}.ok", outdir=config["outdir"], mychr=CHRS),
         # "{outdir}/variant/gatk_all.vcf.gz".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.score_snps.pdf".format(outdir=config["outdir"]),
         # "{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"]),
@@ -122,44 +146,43 @@ rule fastp:
         bind       = config["BIND"],
         json       = config["outdir"]+"/fastp/{sample}_trim.json",
         html       = config["outdir"]+"/fastp/{sample}_trim.html"
-    shell:
-       """
-       if [[ "{params.mode}" != "pe" ]]; then
-        singularity exec {params.bind} {params.fastp_bin} fastp \
-        --stdin \
-        -i <(zcat {input.R1}) \
-        -o {output.R} \
-        -h {params.html} \
-        -j {params.json} \
-        --cut_mean_quality 20 \
-        --cut_window_size 4 \
-        --low_complexity_filter \
-        --complexity_threshold 30 \
-        -w {threads}
-        touch {output.R1}  # create pseudo-R1-file for inputs of the new rule
-        touch {output.R2}  # create pseudo-R2-file for inputs of the new rule
-       else
-        singularity exec {params.bind} {params.fastp_bin} fastp \
-        --stdin \
-        -i <(zcat {input.R1}) \
-        -I <(zcat {input.R2}) \
-        -o {output.R1} \
-        -O {output.R2} \
-        -h {params.html} \
-        -j {params.json} \
-        --correction \
-        --detect_adapter_for_pe \
-        --cut_mean_quality 20 \
-        --cut_window_size 4 \
-        --low_complexity_filter \
-        --complexity_threshold 30 \
-        -w {threads}
-        touch {output.R}  # create pseudo-R-file for inputs of the new rule
-       fi 
+    run:
+        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+            shell(
+                    "singularity exec {params.bind} {params.fastp_bin} fastp \
+                    --stdin \
+                    -i <(zcat {input.R1}) \
+                    -o {output.R} \
+                    -h {params.html} \
+                    -j {params.json} \
+                    --cut_mean_quality 20 \
+                    --cut_window_size 4 \
+                    --low_complexity_filter \
+                    --complexity_threshold 30 \
+                    -w {threads}"
+                )
+            shell("touch {output.R1}")  # create pseudo-R1-file for inputs of the new rule
+            shell("touch {output.R2}")  # create pseudo-R2-file for inputs of the new rule
+        else:
+            shell(
+                    "singularity exec {params.bind} {params.fastp_bin} fastp \
+                    --stdin \
+                    -i <(zcat {input.R1}) \
+                    -I <(zcat {input.R2}) \
+                    -o {output.R1} \
+                    -O {output.R2} \
+                    -h {params.html} \
+                    -j {params.json} \
+                    --correction \
+                    --detect_adapter_for_pe \
+                    --cut_mean_quality 20 \
+                    --cut_window_size 4 \
+                    --low_complexity_filter \
+                    --complexity_threshold 30 \
+                    -w {threads}"
+                )
+            shell("touch {output.R}")  # create pseudo-R-file for inputs of the new rule
 
-        exit 0
-
-       """
 
 # 1-2) Check quality control using FastQC: for each individual
 #QC
@@ -183,17 +206,11 @@ rule fastqc:
         outdir     = config["outdir"],
         fastqc_bin = config["fastqc_bin"],
         bind       = config["BIND"]
-    shell:
-        """
-        #mkdir -p {params.outdir}/fastqc #snakemake create automaticaly the folders
-        if [[ "{params.mode}" != "pe" ]]; then
-            singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R} && touch {output}
-            # rm -rf {input.R1} {input.R2}  # remove pseudo-files of the previous rule
-        else
-            singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R1} {input.R2} && touch {output}
-            # rm -rf {input.R}  # remove pseudo-file of the previous rule
-        fi
-        """
+    run:
+        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+            shell("singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R} && touch {output}")
+        else:
+            shell("singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R1} {input.R2} && touch {output}")
 
 # 1-3) check quality control using FastQC: a global multiQC for the analysis
 # multiQC on fastqc outputs
@@ -211,9 +228,9 @@ rule multiqc_fastqc:
         bind        = config["BIND"]
     shell:
         """
-        #mkdir -p {params.outdir}/multiqc #snakemake create automaticly the folders
         singularity exec {params.bind} {params.multiqc_bin} multiqc --filename {output} {params.outdir}/fastqc
         """
+
 
 ###############################################################################
 ########################  DNA mapping   #######################################
@@ -238,6 +255,7 @@ rule bwa_index:
         singularity exec {params.bind} {params.bwa_bin} bwa index -a bwtsw -b 500000000 {input.genome}
         singularity exec {params.bind} {params.samtools_bin} samtools faidx {input.genome} # create .fai file 
         """
+
 # 2-2) mapping
 # ############################################################
 #   Requirement:
@@ -274,63 +292,71 @@ rule bwa_mapping_wow_merge:
         samtools_bin      = config["samtools_bin"],
         rg                = "@RG\\tID:{sample}\\tSM:{sample}"
     threads: 8
-    shell: 
-        """
-        if [[ "{params.mode}" != "pe" ]]; then
+    run:
+        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+            shell(
+                    "singularity exec {params.bind} {params.bwa_bin} bwa mem \
+                    -t {threads} \
+                    -K 100000000 \
+                    -R '{params.rg}' \
+                    {params.idxbase} \
+                    {input.R} \
+                    |singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
+                    |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}"
+                )
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
+            shell(" rm -rf {input.R1} {input.R2}")  # remove pseudo-files of the previous rule
 
-            singularity exec {params.bind} {params.bwa_bin} bwa mem -t {threads} -K 100000000 -R '{params.rg}' {params.idxbase} {input.R}|singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048|singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}
-            singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}
-            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
-            rm -rf {input.R1} {input.R2}  # remove pseudo-files of the previous rule
-
-        else
+        else:
             #merge PE
-            singularity exec {params.bind} {params.fastp_bin} fastp \
-            -i {input.R1} \
-            -I {input.R2} \
-            --merge \
-            --correction \
-            --merged_out {params.outtmp}.merged.tmp.fastq.gz \
-            --out1 {params.outtmp}_1.unmerged.tmp.fastq.gz \
-            --out2 {params.outtmp}_2.unmerged.tmp.fastq.gz \
-            --json={params.json} \
-            --html={params.html} \
-            --length_required 50 \
-            --thread {threads}
-            
-            rm -f {params.html} {params.json}
+            shell(
+                    "singularity exec {params.bind} {params.fastp_bin} fastp \
+                    -i {input.R1} \
+                    -I {input.R2} \
+                    --merge \
+                    --correction \
+                    --merged_out {params.outtmp}.merged.tmp.fastq.gz \
+                    --out1 {params.outtmp}_1.unmerged.tmp.fastq.gz \
+                    --out2 {params.outtmp}_2.unmerged.tmp.fastq.gz \
+                    --json={params.json} \
+                    --html={params.html} \
+                    --length_required 50 \
+                    --thread {threads}"
+                )
+            shell("rm -f {params.html} {params.json}")
             
             #mapping
             #2 stage : first with unmerged PE and second with merged reads
-            singularity exec {params.bind} {params.bwa_bin} bwa mem \
-            -t {threads} \
-            -K 100000000 \
-            -R '{params.rg}' \
-            {params.idxbase} \
-            {params.outtmp}_1.unmerged.tmp.fastq.gz {params.outtmp}_2.unmerged.tmp.fastq.gz \
-            | singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
-            | singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {params.outtmp}.um.tmp.bam -
-
-            singularity exec {params.bind} {params.bwa_bin} bwa mem \
-            -t {threads} \
-            -K 100000000 \
-            -R '{params.rg}' \
-            {params.idxbase} \
-            {params.outtmp}.merged.tmp.fastq.gz \
-            |singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
-            |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {params.outtmp}.m.tmp.bam -
-            rm -rf {input.R}  # remove pseudo-file of the previous rule
+            shell(
+                    "singularity exec {params.bind} {params.bwa_bin} bwa mem \
+                    -t {threads} \
+                    -K 100000000 \
+                    -R '{params.rg}' \
+                    {params.idxbase} \
+                    {params.outtmp}_1.unmerged.tmp.fastq.gz {params.outtmp}_2.unmerged.tmp.fastq.gz \
+                    | singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
+                    | singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {params.outtmp}.um.tmp.bam -"
+                )
+            shell(
+                    "singularity exec {params.bind} {params.bwa_bin} bwa mem \
+                    -t {threads} \
+                    -K 100000000 \
+                    -R '{params.rg}' \
+                    {params.idxbase} \
+                    {params.outtmp}.merged.tmp.fastq.gz \
+                    |singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
+                    |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {params.outtmp}.m.tmp.bam -"
+                )
+            shell("rm -rf {input.R}")  # remove pseudo-file of the previous rule
 
             # merge bams
-            singularity exec {params.bind} {params.samtools_bin} samtools merge {output.bam} {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam && rm -f {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam
-            singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}
-            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools merge {output.bam} {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam && rm -f {params.outtmp}.m.tmp.bam {params.outtmp}.um.tmp.bam")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
+            shell("rm -rf {params.outtmp}.merged.tmp.fastq.gz")
+            shell("rm -rf {params.outtmp}_1.unmerged.tmp.fastq.gz  {params.outtmp}_2.unmerged.tmp.fastq.gz")
 
-            rm -rf {params.outtmp}.merged.tmp.fastq.gz
-            rm -rf {params.outtmp}_1.unmerged.tmp.fastq.gz  {params.outtmp}_2.unmerged.tmp.fastq.gz
-        fi
-    
-        """
 
 # 2-3) mark end remove duplicate PCR 
 ## For SPET with UMI: https://github.com/tecangenomics/nudup
@@ -359,31 +385,28 @@ rule remove_or_keep_duplicate:
         dedup        = "{outdir}/mapped/{{sample}}_{{mode}}.sorted.dedup.bam".format(outdir=config["outdir"]),
     threads: 10
     message: "Mark/remove or keep PCR duplicates.\n"
-    shell: 
-        """
-        if [[ "{params.mode}" == "spet" ]]; then
-            cat {input.R} > {params.R2_concat}
-            singularity exec {params.bind} {params.nudup_bin} nudup.py -f {params.R2_concat} -o {params.prefix} {input.bam} && rm {params.R2_concat} 
-            singularity exec {params.bind} {params.bamutil_bin} bam TrimBam {params.dedup} {params.outtmp}.clipped.tmp.bam --clip -L {params.probe_length}
-            singularity exec {params.bind} {params.samtools_bin} samtools sort -o {output.bam} {params.outtmp}.clipped.tmp.bam
-            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
-            
-        elif [[ "{params.mode}" == "pe" && {params.bam_rm_dup} == "y" ]]; then
-            ulimit -n 4048
-            mkdir -p {params.tmpdir}
+    run:
+        if params.mode == "spet":
+            shell("cat {input.R} > {params.R2_concat}")
+            shell("singularity exec {params.bind} {params.nudup_bin} nudup.py -f {params.R2_concat} -o {params.prefix} {input.bam} && rm {params.R2_concat}")
+            shell("singularity exec {params.bind} {params.bamutil_bin} bam TrimBam {params.dedup} {params.outtmp}.clipped.tmp.bam --clip -L {params.probe_length}")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools sort -o {output.bam} {params.outtmp}.clipped.tmp.bam")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
+        elif params.mode == "pe" and params.bam_rm_dup == "y":
+            shell("ulimit -n 4048")
+            shell("mkdir -p {params.tmpdir}")
             #singularity exec {params.bind} {params.samtools_bin} samtools rmdup -s {input.bam} {output.bam}
-            singularity exec {params.bind} {params.sambamba_bin} sambamba markdup --remove-duplicates --tmpdir={params.tmpdir} -t {threads} {input.bam} {output.bam} && \
-            rm -f {input.bam} && \
-            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
+            shell(
+                    "singularity exec {params.bind} {params.sambamba_bin} sambamba markdup --remove-duplicates --tmpdir={params.tmpdir} -t {threads} {input.bam} {output.bam} && \
+                    rm -f {input.bam} && \
+                    singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}"
+                )
             #--remove-duplicates #remove duplicates instead of just marking them
-            rm -rf {params.tmpdir}
-            
-        else
-            mv {input.bam} {output.bam}
-            singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}
-
-        fi
-        """         
+            shell("rm -rf {params.tmpdir}")
+        else:
+            shell("mv {input.bam} {output.bam}")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
+        
 
 # 2_3) bam stats 
 rule bam_stats:
@@ -487,9 +510,7 @@ rule gatk4_gvcf_map_file:
         f.close()
 
 
-
 # 3-4) build a datastore of gvcf for each chr
-
 # see: https://gatk.broadinstitute.org/hc/en-us/articles/360040096732-GenomicsDBImport
 rule gatk4_gdb:
     input:
@@ -721,7 +742,7 @@ rule gatk4_snps_quality_graphe_pdf:
         Rscript --vanilla gatk_scores_qual_raw_vs_filtered.R {input.rawsnps} {input.filteredsnps} "SNPs" {output.pdf}
         """
 
-################################END GATK #################################################
+################################ END GATK #################################################
 
 
 # 1) --------- we select variant from the previous filter and keep only biallelic samples ---------------
