@@ -460,8 +460,7 @@ rule multiqc_bam:
 # 3-1) create a reference dictionnary the ref must not be a sl and a ref.fa => ref.dict (not ref.fa.dict)
 rule gatk4_ref_dict:
     input:
-        ref  = "{refp}/{ref}".format(refp=config["REFPATH"],ref=config["GENOME"]),
-        #fai  = "{refp}/{ref}".format(refp=config["REFPATH"],ref=config["GENOME_FAI"]),
+        ref  = "{refp}/{ref}".format(refp=config["REFPATH"],ref=config["GENOME"])
     output:
         dic  = "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]) #config["REFPATH"] + "/" + config["GENOME"] +".dict"
     params:
@@ -471,9 +470,7 @@ rule gatk4_ref_dict:
     threads: 1
     shell:
         """
-        singularity exec {params.bind} {params.gatk4_bin} gatk CreateSequenceDictionary -R {input.ref}
-        #singularity exec {params.bind} {params.samtools_bin} samtools faidx {input.ref} #create fasta index file
-        #singularity exec {params.bind} {params.samtools_bin} samtools dict -o {output.dic} {input.ref}
+        singularity exec {params.bind} {params.samtools_bin} samtools dict -o {output.dic} {input.ref}
         """
 # ------------------  parrallel by chr -----------------
 # 3-2) HaplotypeCaller for each sample and each chr
