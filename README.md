@@ -17,15 +17,34 @@ To set up the QTLseq analysis pipeline in Git for different sequencing modes, fo
 git clone https://forgemia.inra.fr/gafl/users/ha_trang_phung/pipeline_qtlSeq.git
 ```
 ### Step 2: Generate the Sample file
-1. Look for a sample file template provided by the pipeline, which contains the necessary information for configuring the pipeline  for your specific sequencing data. The sample file must be CSV format 
+1. Look for a sample file template provided by the pipeline, which contains the necessary information for configuring the pipeline  for your specific sequencing data. The sample file must be CSV format
 
-(TODO...)
 
-## Generate samples
 
+ 
+2. Open the copied sample file using a text editor or Excel, and fill in the required information for your specific sequencing data. 
+    - In the "SampleName" column,  "P1", "P2", "R", and "S" are used as the unique identifiers for each of the four samples
+    - In the "mode" column, you can specify one of the four available modes for your sequencing data.These modes may include paired-end(pe), single-end(se), SPET(spet), SPET without UMI(spet_no_umi). 
+    - The "fq1" column stands for read1(R1/ForwardRead) and the "fq2" column stands for read2(R2/ReverseRead) in the case of Paired End or UMI in the case of SPET. 
+Note that the QTLseq analysis pipeline is capable of processing multiple input files for each sample simultaneously, if needed.To specify multiple input files for a sample in the sample file, simply separate them with a semicolon (;) in the "fq1" and "fq2" column
+
+        **IMPORTANT**:Please make sure the order of input files specified in the "fq1" column of the sample file need to corresponds correctly with the order of input files in the "fq2", if you are working with paired-end sequencing data or SPET with UMI sequencing data. For single-end reads or SPET without UMI, you can simply put the file names in the 'fq1' column and leave the 'fq2' column empty.
+        
+    - You can also generate automatically your sample file by using the _gen_samples.py_. The _gen_sample.py_ file is a Python script that takes input parameters such as SampleName, mode and fq1 et fq2 inputs files 
+...........................
 ```bash
 python gen_samples.py
 ```
+### Step 3: Configuring the Config file
+
+The config file contains the paths or URLs to the sample file, data directory, and reference genome, as well as various parameters for SNP calling and QTLseq R. It may also include container paths and parameters for binding Singularity containers for software dependencies.
+
+In the config file, you can edit the sample file path, reference genome path, and other parameters to customize the analysis pipeline according to your needs.
+
+
+
+### Step 4: Running the analysis pipeline
+.
 
 ## Clean outputs
 ```bash
