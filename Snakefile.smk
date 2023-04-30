@@ -71,13 +71,13 @@ def standardize_samples(df, valid_mode=["pe", "se", "spet", "spetnoumi"], requir
     return df
 
 # Generate .fai file if not exist
-def gen_fai():
-    path_fai = os.path.join(config['REFPATH'], config['GENOME_FAI'])
-    bind = config["BIND"]
-    samtools_bin = config["samtools_bin"]
-    genome = os.path.join(config["REFPATH"], config["GENOME"])
-    if not os.path.exists(path_fai):
-        shell("singularity exec {bind} {samtools_bin} samtools faidx {genome}")  # create .fai file 
+def gen_fai():	
+    path_fai = config['REFPATH'] + "/" + config['GENOME'] + ".fa.fai"	
+    bind = config["BIND"]	
+    samtools_bin = config["samtools_bin"]	
+    genome = config["REFPATH"] + "/" + config["GENOME"] + ".fa"	
+    if not os.path.exists(path_fai):	
+        shell("singularity exec {bind} {samtools_bin} samtools faidx {genome}")  # create .fai file
     
 
 ##########################
@@ -94,7 +94,7 @@ gen_fai()
 
 # Build a chr list based on GENOME_FAI
 CHRS=list()
-with open(config["REFPATH"]+"/"+config["GENOME_FAI"],'r') as fh:
+with open(config["REFPATH"]+"/"+config["GENOME"]+".fa.fai",'r') as fh:
     #line = fh.readline()
     for line in fh:
       line=line.strip()
@@ -254,13 +254,13 @@ rule multiqc_fastqc:
 # 2-1) reference indexation
 rule bwa_index:
     input:
-        genome = config["REFPATH"] + "/" + config["GENOME"]
+        genome = config["REFPATH"] + "/" + config["GENOME"] + ".fa"
     output:
-       config["REFPATH"] + "/" + config["GENOME"] + ".amb",
-       config["REFPATH"] + "/" + config["GENOME"] + ".ann",
-       config["REFPATH"] + "/" + config["GENOME"] + ".bwt",
-       config["REFPATH"] + "/" + config["GENOME"] + ".pac",
-       config["REFPATH"] + "/" + config["GENOME"] + ".sa"
+       config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".amb",
+       config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".ann",
+       config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".bwt",
+       config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".pac",
+       config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".sa"
     params:
         bind         = config["BIND"],
         bwa_bin      = config["bwa_bin"],
@@ -289,7 +289,7 @@ rule bwa_mapping_wow_merge:
         R1 = "{outdir}/fastp/{{sample}}_{{mode}}_1_trim.fastq.gz".format(outdir=config["outdir"]),
         R2 = "{outdir}/fastp/{{sample}}_{{mode}}_2_trim.fastq.gz".format(outdir=config["outdir"]),
         #fake input used to force index building before alignement if not present
-        idx = config["REFPATH"] + "/" + config["GENOME"] + ".bwt"
+        idx = config["REFPATH"] + "/" + config["GENOME"] + ".fa" + ".bwt"
     output:
         bam   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam".format(outdir=config["outdir"]),
         bai   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam.bai".format(outdir=config["outdir"]),
@@ -300,7 +300,7 @@ rule bwa_mapping_wow_merge:
         html              = config["outdir"]+"/fastp/{sample}_{mode}_trim.html",
         mode              = "{mode}",
         outtmp            = "{outdir}/mapped/{{sample}}_{{mode}}".format(outdir=config["outdir"]),
-        idxbase           = config["REFPATH"] + "/" + config["GENOME"],
+        idxbase           = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind              = config["BIND"],
         bwa_bin           = config["bwa_bin"],
         samtools_bin      = config["samtools_bin"],
@@ -461,7 +461,7 @@ rule multiqc_bam:
 # 3-1) create a reference dictionnary the ref must not be a sl and a ref.fa => ref.dict (not ref.fa.dict)
 rule gatk4_ref_dict:
     input:
-        ref  = "{refp}/{ref}".format(refp=config["REFPATH"],ref=config["GENOME"])
+        ref  = "{refp}/{ref}.fa".format(refp=config["REFPATH"],ref=config["GENOME"])
     output:
         dic  = "{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=config["GENOME"]) #config["REFPATH"] + "/" + config["GENOME"] +".dict"
     params:
@@ -471,7 +471,7 @@ rule gatk4_ref_dict:
     threads: 1
     shell:
         """
-        singularity exec {params.bind} {params.samtools_bin} samtools dict -o {output.dic} {input.ref}
+        singularity exec {params.bind} {params.samtools_bin} samtools dict -o {output.dic} {input.ref} -O {output.dic}
         """
 # ------------------  parrallel by chr -----------------
 # 3-2) HaplotypeCaller for each sample and each chr
@@ -483,11 +483,11 @@ rule gatk4_hc:
         gvcf="{outdir}/variant/gatk_gvcf/{{sample}}_{{mode}}-{{mychr}}.g.vcf.gz".format(outdir=config["outdir"])
     params:
         ch="{mychr}",
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 16
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -533,7 +533,7 @@ rule gatk4_gdb:
         ch="{mychr}",
         tmpdir=config["outdir"] + "/variant/tmpgatkdir",
         gdb  = config["outdir"] + "/variant/" + "GenomicsDB_{mychr}",
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
@@ -561,7 +561,7 @@ rule gatk4_gc:
     params:
         tmpdir=config["outdir"] + "/tmpgatkdir",
         gdb  = config["outdir"] + "/variant/" + "GenomicsDB_{mychr}",
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
@@ -608,7 +608,7 @@ rule gatk4_select_snps_variants:
     output:
         vcf="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
@@ -649,7 +649,7 @@ rule gatk4_filterSnps:
         vcf="{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"])
     params:
         vcftmp ="{outdir}/variant/vcf.snp.tmp.vcf.gz".format(outdir=config["outdir"]),
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"],
@@ -698,7 +698,7 @@ rule gatk4_snps_raw_score_table:
     output:
         csv="{outdir}/variant/gatk_all.score_raw_snps.csv".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
@@ -765,7 +765,7 @@ rule keep_biallelic:
     output:
         biallel = "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         gatk4_bin = config["gatk4_bin"]
     threads: 1
@@ -785,7 +785,7 @@ rule filter_by_dp:
     output:
         allele = "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         gatk4_bin = config["gatk4_bin"],
         min_dp = config["min_dp"],
@@ -808,7 +808,7 @@ rule gatk4_no_missing:
     output:
         keep_genotype="{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         gatk4_bin = config["gatk4_bin"]
     threads: 2
@@ -829,7 +829,7 @@ rule keep_variant_Parents:
     output:
         polymorph="{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         gatk_bin = config["gatk_bin"]
     threads: 2
@@ -864,7 +864,7 @@ rule gatk_stats:
         stat = "{outdir}/variant/gatk_all.keep_snps.stats.txt".format(outdir=config["outdir"])
     params:
         outdir       = config["outdir"],
-        idxbase      = config["REFPATH"] + "/" + config["GENOME"],
+        idxbase      = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind         = config["BIND"],
         bwa_bin      = config["bwa_bin"],
         bcftools_bin = config["bcftools_bin"]
@@ -881,7 +881,7 @@ rule vcf2table:
     output:
         rs="{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"])
     params:
-        ref = config["REFPATH"] + "/" + config["GENOME"],
+        ref = config["REFPATH"] + "/" + config["GENOME"] + ".fa",
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
