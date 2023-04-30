@@ -17,7 +17,7 @@ probe_length: 40
 
 ######### gatk DP filtering
 dp_p: 5
-min_dp: 20
+min_dp: 50
 max_dp: 1400
 #
 ########## do_qtl.R
@@ -29,7 +29,7 @@ window_size: 1000000
 filter_threshold: 0.1
 false_discovery_rate_G: 0.1
 
-min_depth_in_bulk: 20
+min_depth_in_bulk: 100
 max_depth_in_bulk: 1400
 ##
 ##
