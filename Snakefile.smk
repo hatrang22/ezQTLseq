@@ -471,7 +471,7 @@ rule gatk4_ref_dict:
     threads: 1
     shell:
         """
-        singularity exec {params.bind} {params.samtools_bin} samtools dict -o {output.dic} {input.ref} -O {output.dic}
+        singularity exec {params.bind} {params.gatk4_bin} gatk CreateSequenceDictionary -R {input.ref} -O {output.dic}
         """
 # ------------------  parrallel by chr -----------------
 # 3-2) HaplotypeCaller for each sample and each chr
