@@ -38,16 +38,17 @@ def get_fq1(wildcards):
 # Get fastq R2. Could have several fastq file for 1 sample
 def get_fq2(wildcards):
     tt=samples.loc[(wildcards.sample), ["fq2"]].dropna()
-    fs=re.split('[ ;,]+',tt.item())
     ml=list()
-    for f in fs:
-      if f.endswith(".gz"):
-        f.strip()
-        ml.append(config["fq_dir"]+"/"+f)
+    if list(tt):  # if len(tt) > 0
+        fs=re.split('[ ;,]+', tt.item())
+        for f in fs:
+            if f.endswith(".gz"):
+                f.strip()
+                ml.append(config["fq_dir"]+"/"+f)
     return ml
 
 # Standardize samples
-def standardize_samples(df, valid_mode=["pe", "se", "spet", "spet_no_umi"], require_col=["SampleName", "mode", "fq1", "fq2"]):
+def standardize_samples(df, valid_mode=["pe", "se", "spet", "spetnoumi"], require_col=["SampleName", "mode", "fq1", "fq2"]):
     # check column names (all values of require_col must be presented in df)
     if not all([col_name in df.columns for col_name in require_col]):
         raise ValueError(f"Missing column(s) of the sample file. Required columns: {require_col}")
@@ -162,7 +163,7 @@ rule fastp:
         json       = config["outdir"]+"/fastp/{sample}_trim.json",
         html       = config["outdir"]+"/fastp/{sample}_trim.html"
     run:
-        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+        if params.mode != "pe":  # if not pe, namely, se, spet, spetnoumi
             shell(
                     "singularity exec {params.bind} {params.fastp_bin} fastp \
                     --stdin \
@@ -222,7 +223,7 @@ rule fastqc:
         fastqc_bin = config["fastqc_bin"],
         bind       = config["BIND"]
     run:
-        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+        if params.mode != "pe":  # if not pe, namely, se, spet, spetnoumi
             shell("singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R} && touch {output}")
         else:
             shell("singularity exec {params.bind} {params.fastqc_bin} fastqc -o {params.outdir}/fastqc -t {threads} {input.R1} {input.R2} && touch {output}")
@@ -306,7 +307,7 @@ rule bwa_mapping_wow_merge:
         rg                = "@RG\\tID:{sample}\\tSM:{sample}"
     threads: 8
     run:
-        if params.mode != "pe":  # if not pe, namely, se, spet, spet_no_umi
+        if params.mode != "pe":  # if not pe, namely, se, spet, spetnoumi
             shell(
                     "singularity exec {params.bind} {params.bwa_bin} bwa mem \
                     -t {threads} \

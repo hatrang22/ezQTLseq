@@ -1,6 +1,6 @@
 # path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName  fq1  fq2 ...)
 samplesfile : "samples.csv"
-fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/dataset_RdB_H33_pe_spet"
+fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/dataset_RdB_H33_se_spet"
 #fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
 outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
 GENOME      : "Sol_mic_1.0.fa"
