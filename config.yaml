@@ -5,14 +5,14 @@ fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/datase
 outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
 GENOME      : "Sol_mic_1.0"
 REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_Genome/Microtom"
-# Singularity bind folders (Genotoul):
+# Singularity bind folders:
 #
 BIND        : "-B /work2/project/gafl"
 #
 # remove PCR duplicates for paired end(PE)
 bam_remove_duplicate : "y" # must be y or n
 
-###################trim probe 
+###################trim probe for SPET only
 probe_length: 40
 
 ######### gatk DP filtering

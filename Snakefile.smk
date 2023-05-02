@@ -417,6 +417,11 @@ rule remove_or_keep_duplicate:
                 )
             #--remove-duplicates #remove duplicates instead of just marking them
             shell("rm -rf {params.tmpdir}")
+        elif params.mode == "spetnoumi":
+            shell("mv {input.bam} {output.bam}")
+            shell("singularity exec {params.bind} {params.bamutil_bin} bam TrimBam {output.bam} {params.outtmp}.clipped.tmp.bam --clip -L {params.probe_length}")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools sort -o {output.bam} {params.outtmp}.clipped.tmp.bam")
+            shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
         else:
             shell("mv {input.bam} {output.bam}")
             shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
