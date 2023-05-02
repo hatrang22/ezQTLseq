@@ -487,7 +487,7 @@ rule gatk4_hc:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 1
+    threads: 16
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
