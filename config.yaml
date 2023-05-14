@@ -1,9 +1,9 @@
 # path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName  fq1  fq2 ...)
 samplesfile : "samples.csv"
 fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/dataset_RdB_H33_se_spet"
-#fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
 outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
-GENOME      : "Sol_mic_1.0"
+GENOME      : "Sol_mic_1.0.fa"
+GENOME_FAI  : "Sol_mic_1.0.fa.fai"
 REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_Genome/Microtom"
 # Singularity bind folders:
 #
@@ -21,8 +21,8 @@ min_dp: 50
 max_dp: 1400
 #
 ########## do_qtl.R
-R_bulk_size: 38
-S_bulk_size: 38
+R_bulk_size: 48
+S_bulk_size: 48
 #
 nb_takagi_reps: 10000
 window_size: 1000000
@@ -70,7 +70,7 @@ R_bin         : "/work2/project/gafl/tools/containers/R_base_V3.6.0.sif"
 QTL_bin       : "/work2/project/gafl/tools/containers/R_QTLseqr_v0.7.5.2.sif"
 gatk_bin      : "/work2/project/gafl/tools/containers/gatk4_v4.1.9.0.sif"
 bcftools_bin  : "/work2/project/gafl/tools/containers/bcftools_v1.11.sif"
-nudup_bin     : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/containers/nudup_v2.3.3.sif"  
+nudup_bin     : "/work2/project/gafl/tools/containers/nudup_v2.3.3.sif"  
 bamUtil_bin   : "/work2/project/gafl/tools/containers/bamutil.sif"
 
 # singularity bind for IFB core the home is in: /shared/mfs/data/home
