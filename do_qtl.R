@@ -103,7 +103,7 @@ write_tsv(per_chrom_count, statsfile)
 
 write_csv(select(df_filt %>% mutate(REF_FRQ = format(REF_FRQ, digits =1), deltaSNP = format(deltaSNP * 100, digits=0)),-c(8,9,10,14,15,16)),filteredfile)
 
-df_filt <- runQTLseqAnalysis(df_filt, windowSize = windowSize, popStruc = "F2", bulkSize = c(bulkSizeR,bulkSizeS), replications = nbReps, intervals = c(95, 99))
+df_filt <- runQTLseqAnalysis(df_filt, windowSize = windowSize, popStruc = "F2", bulkSize = c(bulkSizeR,bulkSizeS), replications = nbReps, intervals = c(95, 99, 99.99))
 
 df_filt <- runGprimeAnalysis(df_filt, windowSize = windowSize, outlierFilter = "deltaSNP10",filterThreshold = filterThreshold)
 

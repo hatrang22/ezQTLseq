@@ -1,26 +1,29 @@
-# path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName  fq1  fq2 ...)
+# path or URL to sample sheet (CSV format(tab , no quote), columns: SampleName mode fq1 fq2 )
 samplesfile : "samples.csv"
-fq_dir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/dataset_RdB_H33_se_spet"
+fq_dir      : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/SPET/DG-PHYTOM/raw"
 outdir      : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/out"
-GENOME      : "Sol_mic_1.0.fa"
-GENOME_FAI  : "Sol_mic_1.0.fa.fai"
-REFPATH     : "/work2/project/gafl/Data/Solanaceae/Solanum_lycopersicum/DNA/Ref_Genome/Microtom"
-# Singularity bind folders:
+GENOME      : "S_lycopersicum_chromosomes.4.00.fa"
+REFPATH     : "/work2/project/gafl/ReDD/DG-PHYTOM/hatrang/pipeline_qtlSeq/Ref_Seq"
+####################Singularity bind folders:used to specify which directories from the host system should be mounted into the container.
 #
-BIND        : "-B /work2/project/gafl"
+BIND        : "-B /work2/project/gafl" # container directory
 #
-# remove PCR duplicates for paired end(PE)
+#####################remove PCR duplicates for paired end(PE) only:  To remove PCR duplicates after mapping reads, set the value to "y" for Yes. Otherwise, set it to "n" for No.
 bam_remove_duplicate : "y" # must be y or n
 
-###################trim probe for SPET only
+###################trim probe for SPET only: length of the probe (in bases) that needs to be trimmed after removing PCR duplicates
 probe_length: 40
-
-######### gatk DP filtering
-dp_p: 5
-min_dp: 50
-max_dp: 1400
 #
-########## do_qtl.R
+#####################split SNPs and INDELs: This parameter controls whether to separate SNPs and INDELs into two different files or consider them all as variants in the analysis
+split_SNPs_INDELs : "n" # must be y or n
+max_INDELs_size : 10 # this parameter specify the maximum size for INDELs to be included in the analysis
+
+####################gatk DP filtering
+dp_p: 5 #the minimum read depth for parents bulk
+min_dp: 50 #the minimum read depth for F2 bulk
+max_dp: 1400 #the maximum read depth for F2 bulk
+
+######################do_qtl.R parameters 
 R_bulk_size: 48
 S_bulk_size: 48
 #
@@ -28,8 +31,8 @@ nb_takagi_reps: 10000
 window_size: 1000000
 filter_threshold: 0.1
 false_discovery_rate_G: 0.1
-
-min_depth_in_bulk: 100
+#
+min_depth_in_bulk: 50
 max_depth_in_bulk: 1400
 ##
 ##
@@ -46,7 +49,7 @@ max_depth_in_bulk: 1400
 ##
 ## https://gatk.broadinstitute.org/hc/en-us/articles/360035531112?id=2806
 ## For reference, here are some basic filtering thresholds to improve upon.
-##  SNPs
+##  SNPs:
 snp_QUAL_filter : "< 30.0"
 snp_QD_filter : "< 2.0"
 snp_FS_filter : "> 60.0"
@@ -54,11 +57,14 @@ snp_MQ_filter : "< 40.0"
 snp_SOR_filter: "> 3.0"
 snp_MQRankSum_filter : "< -12.5"
 snp_ReadPosRankSum_filter : "< -8.0"
-##
-##
+## INDELs:
+indel_QUAL_filter : "< 30.0"
+indel_QD_filter : "< 2.0"
+indel_FS_filter : "> 200.0"
+indel_ReadPosRankSum_filter : "< -20.0"
 #
 # ---------------------- singularity config -----------------------------
-# # singularity images location
+## singularity images location:  modify the path of the singularity images location to match your server's directory structure.
 fastqc_bin    : "/work2/project/gafl/tools/containers/fastqc_V0.11.8.sif"
 multiqc_bin   : "/work2/project/gafl/tools/containers/multiqc_v1.7.sif"
 fastp_bin     : "/work2/project/gafl/tools/containers/fastp_0.20.0.sif"
@@ -72,19 +78,7 @@ gatk_bin      : "/work2/project/gafl/tools/containers/gatk4_v4.1.9.0.sif"
 bcftools_bin  : "/work2/project/gafl/tools/containers/bcftools_v1.11.sif"
 nudup_bin     : "/work2/project/gafl/tools/containers/nudup_v2.3.3.sif"  
 bamUtil_bin   : "/work2/project/gafl/tools/containers/bamutil.sif"
+bedtools_bin  : "/work2/project/gafl/tools/containers/bedtools_v2.29.2.sif"
 
-# singularity bind for IFB core the home is in: /shared/mfs/data/home
-# BIND        : "-B /shared/mfs/data/home/jlagnel"
-# if no binding:
-# Bind gafl01:
 
-#BIND        : "-B /work/project/gafl,/nosave/project/gafl,/work/project/gafl"
-
-# singularity modules only for genotoul
-
-#MODULES     : "module load system/singularity-2.5.1"
-
-# if singularity is not as module
-MODULES     : ""
-# --------------------------------------------------------
 

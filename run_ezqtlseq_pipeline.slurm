@@ -60,9 +60,9 @@ mkdir -p logs
 
 # Generate the dag files
 # With samples
-# snakemake --configfile $CONFIG -s $RULES --dag | dot -Tpdf > dag.pdf
+# snakemake --configfile $CONFIG -s $RULES --dag | dot -Tpdf > dag_samples.pdf
 # Only rules
-snakemake --configfile $CONFIG -s $RULES --rulegraph | dot -Tpdf > dag.pdf
+snakemake --configfile $CONFIG -s $RULES --rulegraph | dot -Tpdf > dag_rules.pdf
 
 # Dry run (simulation)
 # snakemake --configfile $CONFIG -s $RULES -np -j $MAX_JOBS --cluster-config $CLUSTER_CONFIG --cluster "$CLUSTER" > snakemake_dryrun.out

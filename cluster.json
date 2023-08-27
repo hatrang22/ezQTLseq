@@ -43,7 +43,7 @@
     "bwa_mapping_wow_merge" :
     {
         "jobname"   : "{rule}_{wildcards.sample}",
-        "time"      : "60:00:00",
+        "time"      : "72:00:00",
         "cores"     : 8,
         "mem"       : "32g",
         "out"       : "{rule}_{wildcards.sample}.out"
@@ -52,8 +52,8 @@
     {
         "jobname"   : "{rule}_{wildcards.sample}",
         "time"      : "60:00:00",
-        "cores"     : 10,
-        "mem"       : "24g",
+        "cores"     : 12,
+        "mem"       : "32g",
         "out"       : "{rule}_{wildcards.sample}.out"
     },
     "bam_stats" :
@@ -79,7 +79,7 @@
     {
         "jobname"   : "{rule}_{wildcards.sample}-{wildcards.mychr}",
         "time"      : "72:00:00",
-        "cores"     : 16,
+        "cores"     : 1,
         "mem"       : "16g",
         "out"       : "{rule}_{wildcards.sample}-{wildcards.mychr}.out"
     },
@@ -88,7 +88,7 @@
     {
         "jobname"   : "{rule}_{wildcards.mychr}",
         "time"      : "48:00:00",
-        "cores"     : 12,
+        "cores"     : 1,
         "mem"       : "16g",
         "out"       : "{rule}_{wildcards.mychr}.out"
     },
@@ -97,7 +97,7 @@
     {
         "jobname"   : "{rule}_{wildcards.mychr}",
         "time"      : "92:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g",
         "out"       : "{rule}_{wildcards.mychr}.out"
     },
@@ -112,45 +112,78 @@
     "combinevcf" :
     {
         "time"      : "32:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "16g"
     },
 
     "gatk4_select_snps_variants" :
     {
          "time"      : "08:00:00",
-        "cores"     : 10,
+        "cores"     : 1,
         "mem"       : "10g"
     },
 
     "gatk4_filterSnps" :
     {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g"
     },
 
     "gatk4_snps_raw_score_table" :
     {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "32g"
     }, 
 
     "gatk4_snps_filtered_score_table" :
     {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "32g"
     },
 
     "gatk4_snps_quality_graphe_pdf" :
     {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "32g"
     },
 
+    "gatk4_select_indels_variants" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+    },
+
+    "gatk4_filterIndels" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "10g"
+    },
+    "gatk4_indels_raw_score_table" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "32g"
+    }, 
+
+    "gatk4_indels_filtered_score_table" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "32g"
+    },
+
+    "gatk4_indels_quality_graphe_pdf" :
+    {
+        "time"      : "08:00:00",
+        "cores"     : 1,
+        "mem"       : "32g"
+    },
    "keep_biallelic" :
    {
         "time"      : "08:00:00",
@@ -161,34 +194,34 @@
    "filter_by_dp" :
    {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g"
    },
 
    "gatk4_no_missing" :
    {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g"
    },
 
    "keep_variant_Parents" :
    {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g"
    },
 
    "keep_extract_bulks" :
    {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "10g"
    },
    "gatk_stats" :
     {
         "time"      : "08:00:00",
-        "cores"     : 2,
+        "cores"     : 1,
         "mem"       : "32g"
     },
 

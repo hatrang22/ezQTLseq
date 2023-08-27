@@ -47,7 +47,7 @@ def get_fq2(wildcards):
                 ml.append(config["fq_dir"]+"/"+f)
     return ml
 
-# Standardize samples
+# Samples file verification 
 def standardize_samples(df, valid_mode=["pe", "se", "spet", "spetnoumi"], require_col=["SampleName", "mode", "fq1", "fq2"]):
     # check column names (all values of require_col must be presented in df)
     if not all([col_name in df.columns for col_name in require_col]):
@@ -72,20 +72,33 @@ def standardize_samples(df, valid_mode=["pe", "se", "spet", "spetnoumi"], requir
 
 # Generate .fai file if not exist
 def gen_fai():	
-    path_fai = config['REFPATH'] + "/" + config['GENOME_FAI'] 	
+    path_fai = config['REFPATH'] + "/" + config['GENOME'] +".fai"	
     bind = config["BIND"]	
     samtools_bin = config["samtools_bin"]	
     genome = config["REFPATH"] + "/" + config["GENOME"] 	
     if not os.path.exists(path_fai):	
         shell("singularity exec {bind} {samtools_bin} samtools faidx {genome}")  # create .fai file
     
+# Create final out variable
+def create_final_out():
+    out = ["{outdir}/variant/gatk_all.score_snps.pdf".format(outdir=config["outdir"])]
+    if config["split_SNPs_INDELs"] == "y":
+        out.append("{outdir}/variant/gatk_all.score_indels.pdf".format(outdir=config["outdir"]))
+    elif config["split_SNPs_INDELs"] == "n":
+        pass
+    else:
+        raise ValueError("split_SNPs_INDELs variable must be 'y' or 'n'")
+    out.append("{outdir}/multiqc/multiqc_report_fastqc.html".format(outdir=config["outdir"]))
+    out.append("{outdir}/Rqtl/filtered.csv".format(outdir=config["outdir"]))
+########### ADD rule output ectract_flanking_sequence here once finished
+    return out
 
 ##########################
 ## GLOBAL VARIABLES
 ##########################
 
 # Read the sample file using pandas lib (sample names+ fastq names) and create index using the sample name
-samples = pd.read_csv(config["samplesfile"], sep='\t', dtype=str, comment='#').set_index(["SampleName"], drop=False)
+samples = pd.read_csv(config["samplesfile"], sep="[ \t]{1,}", dtype=str, comment='#').set_index(["SampleName"], drop=False)
 # Standardize samples
 samples = standardize_samples(samples)
 
@@ -94,42 +107,20 @@ gen_fai()
 
 # Build a chr list based on GENOME_FAI
 CHRS=list()
-with open(config["REFPATH"]+"/"+config["GENOME_FAI"],'r') as fh:
+with open(config["REFPATH"]+"/"+config["GENOME"]+".fai",'r') as fh:
     for line in fh:
       line=line.strip()
       fs=re.split(r'\t',line)
       CHRS.append(fs[0])
 fh.close()
 
+# Create final outs
+FINALOUT = create_final_out()
+
 ###################################################################################
 rule final_outs:
     input:
-        # expand("{outdir}/fastp/{sample[0]}_{sample[1]}_trim.fastq.gz", outdir=config["outdir"], sample=zip(samples['SampleName'], samples['mode'])),
-        # expand("{outdir}/fastqc/{sample[0]}_{sample[1]}.OK.done", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        "{outdir}/multiqc/multiqc_report_fastqc.html".format(outdir=config["outdir"]),
-        # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        # expand("{outdir}/mapped/raw/{sample[0]}_{sample[1]}_sorted.raw.bam.bai", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        # expand("{outdir}/mapped/{sample[0]}_{sample[1]}_sorted.bam", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        # expand("{outdir}/mapped/{sample[0]}_{sample[1]}.stats.txt", outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode'])),
-        "{outdir}/multiqc/multiqc_report_bam.html".format(outdir=config["outdir"]),
-        #"{refp}/{ref}.dict".format(refp=config["REFPATH"],ref=os.path.splitext(config["GENOME"])[0])
-        # expand("{outdir}/variant/gatk_gvcf/{sample[0]}_{sample[1]}-{mychr}.g.vcf.gz",outdir=config["outdir"],sample=zip(samples['SampleName'], samples['mode']), mychr=CHRS),
-        # expand("{outdir}/variant/gvcf_{mychr}_list.map", outdir=config["outdir"], mychr=CHRS),
-        # expand("{outdir}/variant/gatk_genomicsdb_{mychr}.ok", outdir=config["outdir"], mychr=CHRS),
-        # "{outdir}/variant/gatk_all.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.score_snps.pdf".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"]),
-        # "{outdir}/variant/gatk_all.keep_snps.stats.txt".format(outdir=config["outdir"]),
-        # "{outdir}/Rqtl/gatk_all.filter_bulk_rs.table".format(outdir=config["outdir"]),
-        "{outdir}/Rqtl/6.Takagi.jpg".format(outdir=config["outdir"]),
-        "{outdir}/Rqtl/qtlsT.csv".format(outdir=config["outdir"]),
-        "{outdir}/Rqtl/qtlsG.csv".format(outdir=config["outdir"]),
-        "{outdir}/Rqtl/filtered.csv".format(outdir=config["outdir"]),"{outdir}/Rqtl/stats.txt".format(outdir=config["outdir"])
-     
+        FINALOUT
 
 ##################################################################################
 ########################  PREPROCESSING  #########################################
@@ -155,7 +146,6 @@ rule fastp:
         spl        = config["outdir"]+"/fastp/{sample}",
         fqdir      = config["fq_dir"],
         outdir     = config["outdir"],
-        modules    = config["MODULES"],
         fastp_bin  = config["fastp_bin"],
         bind       = config["BIND"],
         json       = config["outdir"]+"/fastp/{sample}_trim.json",
@@ -292,7 +282,6 @@ rule bwa_mapping_wow_merge:
         bam   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam".format(outdir=config["outdir"]),
         bai   = "{outdir}/mapped/raw/{{sample}}_{{mode}}_sorted.raw.bam.bai".format(outdir=config["outdir"]),
     params:
-        modules           = config["MODULES"],
         fastp_bin         = config["fastp_bin"],
         json              = config["outdir"]+"/fastp/{sample}_{mode}_trim.json",
         html              = config["outdir"]+"/fastp/{sample}_{mode}_trim.html",
@@ -314,8 +303,7 @@ rule bwa_mapping_wow_merge:
                     {params.idxbase} \
                     {input.R} \
                     |singularity exec {params.bind} {params.samtools_bin} samtools view -h -F 2048 \
-                    |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}"
-                )
+                    |singularity exec {params.bind} {params.samtools_bin} samtools sort -@2 -m 6G -o {output.bam}") 
             shell("singularity exec {params.bind} {params.samtools_bin} samtools flagstat -@ {threads} {output.bam}")
             shell("singularity exec {params.bind} {params.samtools_bin} samtools index -@ {threads} -b {output.bam}")
             shell(" rm -rf {input.R1} {input.R2}")  # remove pseudo-files of the previous rule
@@ -399,6 +387,7 @@ rule remove_or_keep_duplicate:
     message: "Mark/remove or keep PCR duplicates.\n"
     run:
         if params.mode == "spet":
+            shell("python correct_header_fastq.py -fastq_files {input.R}")
             shell("cat {input.R} > {params.R2_concat}")
             shell("singularity exec {params.bind} {params.nudup_bin} nudup.py -f {params.R2_concat} -o {params.prefix} {input.bam} && rm {params.R2_concat}")
             shell("singularity exec {params.bind} {params.bamutil_bin} bam TrimBam {params.dedup} {params.outtmp}.clipped.tmp.bam --clip -L {params.probe_length}")
@@ -490,7 +479,7 @@ rule gatk4_hc:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 16
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -540,7 +529,7 @@ rule gatk4_gdb:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 12
+    threads: 1
     shell:
         """
         mkdir -p {params.tmpdir}
@@ -568,7 +557,7 @@ rule gatk4_gc:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 2
+    threads: 1
     message: "GATK4 genotype_variants vcf\n"
     shell:
         """
@@ -594,7 +583,7 @@ rule combinevcf:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -603,29 +592,48 @@ rule combinevcf:
         gatk --java-options '-Xmx16G' IndexFeatureFile -I {output.gvcf}
         #-I vcf_list_to_merge.txt
         """
-# -------------------- SNPs selection and filtering --------------------------------
-# 3-7) select SNPs only
-rule gatk4_select_snps_variants:
+rule select_variants:
     input:
         vcf = "{outdir}/variant/gatk_all.vcf.gz".format(outdir=config["outdir"])
     output:
-        vcf="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"])
+        vcf_snps = "{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"]),
+        vcf_indels = "{outdir}/variant/gatk_all.raw_indels.vcf.gz".format(outdir=config["outdir"]),
+        vcf_all =  "{outdir}/variant/gatk_all.raw_indels_snps.vcf.gz".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
-        gatk4_bin = config["gatk4_bin"]
-    threads: 10
-    message: "GATK4 select only SNPs variants vcf\n"
-    shell:
-        """
-        singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' SelectVariants \
-        --select-type-to-include SNP \
-        --variant {input.vcf} \
-        --reference {params.ref} \
-        --output {output.vcf}
-        """
+        gatk4_bin = config["gatk4_bin"],
+        split_snps_indels = config["split_SNPs_INDELs"],
+        max_indels_size  = config["max_INDELs_size"]
+    threads: 1
+    run:
+        if params.split_snps_indels == "n":
+            shell("singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' SelectVariants \
+                --select-type-to-include SNP \
+                --select-type-to-include INDEL \
+                --variant {input.vcf} \
+                --reference {params.ref} \
+                --max-indel-size {params.max_indels_size} \
+                --output {output.vcf_all} ")
+            shell("touch {output.vcf_snps}")
+            shell("touch {output.vcf_indels}")
+        else:
+            shell("singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' SelectVariants \
+                --select-type-to-include SNP \
+                --variant {input.vcf} \
+                --reference {params.ref} \
+                --output {output.vcf_snps} ")
+            shell("singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' SelectVariants \
+                -select-type INDEL \
+                --variant {input.vcf} \
+                --reference {params.ref} \
+                --output {output.vcf_indels} ") 
+            shell("touch {output.vcf_all}")
+
 # 3-8) hard filtering as outlined in GATK docs
 # (https://gatkforums.broadinstitute.org/gatk/discussion/2806/howto-apply-hard-filters-to-a-call-set)
 # https://gatk.broadinstitute.org/hc/en-us/articles/360035890471-Hard-filtering-germline-short-variants
@@ -647,13 +655,17 @@ rule gatk4_select_snps_variants:
 # ReadPosRankSum < -8.0
 rule gatk4_filterSnps:
     input:
-        vcf="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"])
+        vcf_snps="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"]),
+        vcf_all =  "{outdir}/variant/gatk_all.raw_indels_snps.vcf.gz".format(outdir=config["outdir"])
     output:
-        vcf="{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"])
+        vcf="{outdir}/variant/gatk_all.filtered.vcf.gz".format(outdir=config["outdir"]),
+        stats="{outdir}/variant/gatk_all.filtered.stats.txt".format(outdir=config["outdir"])
+
     params:
         vcftmp ="{outdir}/variant/vcf.snp.tmp.vcf.gz".format(outdir=config["outdir"]),
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
+        bcftools_bin = config["bcftools_bin"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"],
         QUAL_filter = config["snp_QUAL_filter"],
@@ -662,64 +674,103 @@ rule gatk4_filterSnps:
         MQ_filter = config["snp_MQ_filter"],
         SOR_filter = config["snp_SOR_filter"],
         MQRankSum_filter = config["snp_MQRankSum_filter"],
-        ReadPosRankSum_filter = config["snp_ReadPosRankSum_filter"]
-    threads: 2
-    shell:
-        """
-        singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx8G' VariantFiltration \
-        --variant {input.vcf} \
-        --reference {params.ref} \
-        --output {params.vcftmp} \
-        -filter-name "QUAL_filter" -filter "QUAL {params.QUAL_filter}" \
-        -filter-name "QD_filter" -filter "QD {params.QD_filter}" \
-        -filter-name "FS_filter" -filter "FS {params.FS_filter}" \
-        -filter-name "MQ_filter" -filter "MQ {params.MQ_filter}" \
-        -filter-name "SOR_filter" -filter "SOR {params.SOR_filter}" \
-        -filter-name "MQRankSum_filter" -filter "MQRankSum {params.MQRankSum_filter}" \
-        -filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum {params.ReadPosRankSum_filter}" \
-        --genotype-filter-expression "DP<3" \
-        --genotype-filter-name "LowDP3" \
+        ReadPosRankSum_filter = config["snp_ReadPosRankSum_filter"],
+        split_snps_indels = config["split_SNPs_INDELs"]
+    threads: 1
+    run: 
+        if params.split_snps_indels == "n":
+            shell("""
+                singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' VariantFiltration \
+                --variant {input.vcf_all} \
+                --reference {params.ref} \
+                --output {params.vcftmp} \
+                --filter-name "QUAL_filter" -filter "QUAL {params.QUAL_filter}" \
+                --filter-name "QD_filter" -filter "QD {params.QD_filter}" \
+                --filter-name "FS_filter" -filter "FS {params.FS_filter}" \
+                --filter-name "MQ_filter" -filter "MQ {params.MQ_filter}" \
+                --filter-name "SOR_filter" -filter "SOR {params.SOR_filter}" \
+                --filter-name "MQRankSum_filter" -filter "MQRankSum {params.MQRankSum_filter}" \
+                --filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum {params.ReadPosRankSum_filter}" \
+                --genotype-filter-expression "DP<3" \
+                --genotype-filter-name "LowDP3" """)
 
-        singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx8G' SelectVariants \
-        --variant {params.vcftmp} \
-        --set-filtered-gt-to-nocall \
-        --exclude-filtered \
-        --reference {params.ref} \
-        --output {output.vcf} \
+            shell("""singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' SelectVariants \
+                --variant {params.vcftmp} \
+                --set-filtered-gt-to-nocall \
+                --exclude-filtered \
+                --reference {params.ref} \
+                --output {output.vcf} """)
 
 
-        rm -f {params.vcftmp} {params.vcftmp}.tbi
-        """
+            shell("""rm -f {params.vcftmp} {params.vcftmp}.tbi""")
+            shell("""
+                singularity exec {params.bind} {params.bcftools_bin} \
+                bcftools stats {input.vcf_all} {output.vcf} > {output.stats}""")
+        else:
+            shell("""
+                singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' VariantFiltration \
+                --variant {input.vcf_snps} \
+                --reference {params.ref} \
+                --output {params.vcftmp} \
+                --filter-name "QUAL_filter" -filter "QUAL {params.QUAL_filter}" \
+                --filter-name "QD_filter" -filter "QD {params.QD_filter}" \
+                --filter-name "FS_filter" -filter "FS {params.FS_filter}" \
+                --filter-name "MQ_filter" -filter "MQ {params.MQ_filter}" \
+                --filter-name "SOR_filter" -filter "SOR {params.SOR_filter}" \
+                --filter-name "MQRankSum_filter" -filter "MQRankSum {params.MQRankSum_filter}" \
+                --filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum {params.ReadPosRankSum_filter}" \
+                --genotype-filter-expression "DP<3" \
+                --genotype-filter-name "LowDP3" """)
 
+            shell("""singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' SelectVariants \
+                --variant {params.vcftmp} \
+                --set-filtered-gt-to-nocall \
+                --exclude-filtered \
+                --reference {params.ref} \
+                --output {output.vcf} """)
+
+            shell("rm -f {params.vcftmp} {params.vcftmp}.tbi")
+            shell("""singularity exec {params.bind} {params.bcftools_bin} \
+                bcftools stats {input.vcf_snps} {output.vcf} > {output.stats}""")
 # 3-9) rules for creating quality score graphs for raw SNPs.
 # First we do a table with the quality score using the VariantsToTable option
 rule gatk4_snps_raw_score_table:
     input:
-        vcf="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"])
+        vcf_snps="{outdir}/variant/gatk_all.raw_snps.vcf.gz".format(outdir=config["outdir"]),
+        vcf_all =  "{outdir}/variant/gatk_all.raw_indels_snps.vcf.gz".format(outdir=config["outdir"])
     output:
         csv="{outdir}/variant/gatk_all.score_raw_snps.csv".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
-        gatk4_bin = config["gatk4_bin"]
-    threads: 2
-    shell:
-        """
-        singularity exec {params.bind} {params.gatk4_bin} \
-        gatk --java-options '-Xmx8G' VariantsToTable \
-        -V {input.vcf} \
-        -R {params.ref} \
-        -F CHROM -F POS -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
-        -O {output.csv}
-        """
+        gatk4_bin = config["gatk4_bin"],
+        split_snps_indels = config["split_SNPs_INDELs"]
+    threads: 1
+    run:
+        if params.split_snps_indels == "n":
+            shell("singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' VariantsToTable \
+                -V {input.vcf_all} \
+                -R {params.ref} \
+                -F CHROM -F POS -F REF -F ALT -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
+                -O {output.csv}")
+        else:
+            shell("singularity exec {params.bind} {params.gatk4_bin} \
+                gatk --java-options '-Xmx8G' VariantsToTable \
+                -V {input.vcf_snps} \
+                -R {params.ref} \
+                -F CHROM -F POS -F REF -F ALT -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
+                -O {output.csv}")
 # 3-10) rules for creating quality score graphs for filtered SNPs.
 # First we do a table with the quality score using the VariantsToTable option
 rule gatk4_snps_filtered_score_table:
     input:
-        vcf="{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"])
+        vcf="{outdir}/variant/gatk_all.filtered.vcf.gz".format(outdir=config["outdir"])
     output:
         csv="{outdir}/variant/gatk_all.score_filtered_snps.csv".format(outdir=config["outdir"])
     params:
@@ -727,14 +778,14 @@ rule gatk4_snps_filtered_score_table:
         bind = config["BIND"],
         samtools_bin = config["samtools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
         gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' VariantsToTable \
         -V {input.vcf} \
         -R {params.ref} \
-        -F CHROM -F POS -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
+        -F CHROM -F POS -F QUAL -F REF -F ALT -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
         -O {output.csv}
         """
 
@@ -749,11 +800,108 @@ rule gatk4_snps_quality_graphe_pdf:
     params:
         bind = config["BIND"],
         R_bin = config["R_bin"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.R_bin} \
         Rscript --vanilla gatk_scores_qual_raw_vs_filtered.R {input.rawsnps} {input.filteredsnps} "SNPs" {output.pdf}
+        """
+
+# 3-13) hard filtering as outlined in GATK docs
+# (https://gatkforums.broadinstitute.org/gatk/discussion/2806/howto-apply-hard-filters-to-a-call-set)
+# (https://gatk.broadinstitute.org/hc/en-us/articles/360035890471)
+# "QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0"
+rule gatk4_filterIndels:
+    input:
+        vcf="{outdir}/variant/gatk_all.raw_indels.vcf.gz".format(outdir=config["outdir"])
+    output:
+        vcf="{outdir}/variant/gatk_all.filtered_indels.vcf.gz".format(outdir=config["outdir"])
+    params:
+        ref = config["REFPATH"] + "/" + config["GENOME"],
+        bind = config["BIND"],
+        samtools_bin = config["samtools_bin"],
+        gatk4_bin = config["gatk4_bin"],
+        QUAL_filter = config["indel_QUAL_filter"],
+        QD_filter = config["indel_QD_filter"],
+        FS_filter = config["indel_FS_filter"],
+        ReadPosRankSum_filter = config["indel_ReadPosRankSum_filter"]
+    threads: 1
+    message: "GATK4 select INDELs (only) variants vcf\n"
+    shell:
+        """
+        singularity exec {params.bind} {params.gatk4_bin} \
+        gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' VariantFiltration \
+        --variant {input.vcf} \
+        --reference {params.ref} \
+        --output {output.vcf} \
+        -filter-name "QUAL_filter" -filter "QUAL {params.QUAL_filter}" \
+        -filter-name "QD_filter" -filter "QD {params.QD_filter}" \
+        -filter-name "FS_filter" -filter "FS {params.FS_filter}" \
+        -filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum {params.ReadPosRankSum_filter}"
+        """
+
+# 3-14) rules for creating quality score graphs for raw SNPs.
+# First we do a table with the quality score using the VariantsToTable option
+rule gatk4_indels_raw_score_table:
+    input:
+        vcf="{outdir}/variant/gatk_all.raw_indels.vcf.gz".format(outdir=config["outdir"])
+    output:
+        csv="{outdir}/variant/gatk_all.score_raw_indels.csv".format(outdir=config["outdir"])
+    params:
+        ref = config["REFPATH"] + "/" + config["GENOME"],
+        bind = config["BIND"],
+        samtools_bin = config["samtools_bin"],
+        gatk4_bin = config["gatk4_bin"]
+    threads: 1
+    shell:
+        """
+        singularity exec {params.bind} {params.gatk4_bin} \
+        gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' VariantsToTable \
+        -V {input.vcf} \
+        -R {params.ref} \
+        -F CHROM -F POS -F REF -F ALT -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
+        -O {output.csv}
+        """
+
+# 3-15) rules for creating quality score graphs for filtered SNPs.
+# First we do a table with the quality score using the VariantsToTable option
+rule gatk4_indels_filtered_score_table:
+    input:
+        vcf="{outdir}/variant/gatk_all.filtered_indels.vcf.gz".format(outdir=config["outdir"])
+    output:
+        csv="{outdir}/variant/gatk_all.score_filtered_indels.csv".format(outdir=config["outdir"])
+    params:
+        ref = config["REFPATH"] + "/" + config["GENOME"],
+        bind = config["BIND"],
+        samtools_bin = config["samtools_bin"],
+        gatk4_bin = config["gatk4_bin"]
+    threads: 1
+    shell:
+        """
+        singularity exec {params.bind} {params.gatk4_bin} \
+        gatk --java-options '-Xmx8G -XX:ParallelGCThreads={threads}' VariantsToTable \
+        -V {input.vcf} \
+        -R {params.ref} \
+        -F CHROM -F POS -F REF -F ALT -F QUAL -F QD -F DP -F MQ -F MQRankSum -F FS -F ReadPosRankSum -F SOR \
+        -O {output.csv}
+        """
+
+## 3-16) plots run Rscript to create quality score graphs to determine filters for indels vcf and snps vcf
+## Rscript "graph_score_qual.R" must be download
+rule gatk4_indels_quality_graphe_pdf:
+    input:
+        rawindels="{outdir}/variant/gatk_all.score_raw_indels.csv".format(outdir=config["outdir"]),
+        filteredindels = "{outdir}/variant/gatk_all.score_filtered_indels.csv".format(outdir=config["outdir"])
+    output:
+        pdf="{outdir}/variant/gatk_all.score_indels.pdf".format(outdir=config["outdir"])
+    params:
+        bind = config["BIND"],
+        R_bin = config["R_bin"]
+    threads: 1
+    shell:
+        """
+        singularity exec {params.bind} {params.R_bin} \
+        Rscript --vanilla gatk_scores_qual_raw_vs_filtered.R {input.rawindels} {input.filteredindels} "INDELs" {output.pdf}
         """
 
 ################################ END GATK #################################################
@@ -764,12 +912,14 @@ rule gatk4_snps_quality_graphe_pdf:
 ## 4-1 ---------------keep biallelic ------------------
 rule keep_biallelic:
     input:
-        snp = "{outdir}/variant/gatk_all.filtered_snps.vcf.gz".format(outdir=config["outdir"])
+        snp = "{outdir}/variant/gatk_all.filtered.vcf.gz".format(outdir=config["outdir"])
     output:
-        biallel = "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"])
+        biallel = "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"]),
+        stats   = "{outdir}/variant/gatk_all.keep_biallele.stats.txt".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
+        bcftools_bin = config["bcftools_bin"],
         gatk4_bin = config["gatk4_bin"]
     threads: 1
     shell:
@@ -779,22 +929,28 @@ rule keep_biallelic:
         --variant {input.snp} \
         --exclude-filtered \
         --restrict-alleles-to BIALLELIC \
-        --output {output.biallel}
+        --output {output.biallel} 
+
+        singularity exec {params.bind} {params.bcftools_bin} \
+        bcftools stats {input.snp} {output.biallel} > {output.stats}
         """
+
 ## 4-2 ---------- filter in depth -----------------
 rule filter_by_dp:
     input:
         snp = "{outdir}/variant/gatk_all.keep_biallele.vcf.gz".format(outdir=config["outdir"])
     output:
-        allele = "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"])
+        allele = "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"]),
+        stats  = "{outdir}/variant/gatk_all.keep_filter_dp.stats.txt".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
         gatk4_bin = config["gatk4_bin"],
         min_dp = config["min_dp"],
         max_dp = config["max_dp"],
+        bcftools_bin = config["bcftools_bin"],
         dp_p = config["dp_p"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -802,6 +958,9 @@ rule filter_by_dp:
         --variant {input.snp} \
         -select "vc.getGenotype('P1').getDP()>{params.dp_p} && vc.getGenotype('P2').getDP() > {params.dp_p} && (vc.getGenotype('R').getDP() > {params.min_dp} && vc.getGenotype('R').getDP() < {params.max_dp}) && (vc.getGenotype('S').getDP() > {params.min_dp} && vc.getGenotype('S').getDP() < {params.max_dp})" \
         --output {output.allele}
+
+        singularity exec {params.bind} {params.bcftools_bin} \
+        bcftools stats {input.snp} {output.allele} > {output.stats}
         """
 
 ## 4-3) ------------- keep only SNP without missing genotypes --------------
@@ -809,12 +968,14 @@ rule gatk4_no_missing:
     input:
         vcf = "{outdir}/variant/gatk_all.keep_filter_dp.vcf.gz".format(outdir=config["outdir"])
     output:
-        keep_genotype="{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"])
+        keep_genotype="{outdir}/variant/gatk_all.keep_snps_genotyped.vcf.gz".format(outdir=config["outdir"]),
+        stats = "{outdir}/variant/gatk_all.keep_snps_gennotyped.stats.txt".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
+        bcftools_bin = config["bcftools_bin"],
         gatk4_bin = config["gatk4_bin"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk4_bin} \
@@ -823,61 +984,83 @@ rule gatk4_no_missing:
         --exclude-filtered \
         --max-nocall-fraction 0.00 \
         --output {output.keep_genotype}
+
+        singularity exec {params.bind} {params.bcftools_bin} \
+        bcftools stats {input.vcf} {output.keep_genotype} > {output.stats}
+        """
+## 4-4) ---------Extract flanking sequence of SNP for parents-------------------
+rule extract_flanking_sequence:
+    input: 
+        vcf = "{outdir}/variant/gatk_all.keep_snps_genotyped.vcf.gz".format(outdir=config["outdir"]),
+    output:
+        genome_size = "{outdir}/variant/genome_size.txt",
+        bed         = "{outdir}/variant/vcf2bed.bed",
+        flanking_interval = "{outdir}/variant/flanking_interval.bed"
+    params:
+        genome_ref = config["REFPATH"] + "/" + config["GENOME"] ,
+        genome_ref_fai = config["REFPATH"] + "/" + config["GENOME"] + ".fai",
+        bind = config["BIND"],
+        bcftools_bin = config["bcftools_bin"],
+        gatk_bin = config["gatk_bin"],
+        bedtools_bin = config["bedtools_bin"],
+        samtools_bin = config["samtools_bin"]
+    shell: 
+        """
+        ## Create genome_size file
+        awk '{print $1"\t"$2}' {params.genome_ref_fai} > {output.genome_size}
+        ## Convert vcf to bed
+        zcat {input.vcf}|grep -v "^#" | awk '{print $1"\t"$2-1"\t"$2}' > {output.bed}
+        ## Extract flanking interval
+        singularity exec -B {params.bind} {params.bedtools_bin}  bedtools slop -i {output.bed} -g {output.genome_size} -l 50 -r 50 > {output.flanking_interval}
+
+
         """
 
-## 4-4) ---------keep polymorphism with the parents -----------
+
+## 4-5) ---------keep polymorphism with the parents -----------
 rule keep_variant_Parents:
     input:
-        snp="{outdir}/variant/gatk_all.keep_snps.vcf.gz".format(outdir=config["outdir"])
+        snp="{outdir}/variant/gatk_all.keep_snps_genotyped.vcf.gz".format(outdir=config["outdir"])
     output:
-        polymorph="{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"])
+        polymorph="{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"]),
+        stats = "{outdir}/variant/gatk_all.filter_P_snps.stats.txt".format(outdir=config["outdir"])
     params:
         ref = config["REFPATH"] + "/" + config["GENOME"] ,
         bind = config["BIND"],
+        bcftools_bin = config["bcftools_bin"],
         gatk_bin = config["gatk_bin"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.gatk_bin} \
         java -jar /opt/jvarkit_github/jvarkit/dist/vcffilterjdk.jar \
         -e 'return !variant.getGenotype("P1").sameGenotype(variant.getGenotype("P2"));' -o {output.polymorph} {input.snp}
         #keep only the polymorph different with the parents 
+
+        singularity exec {params.bind} {params.bcftools_bin} bcftools index -t {output.polymorph}
+        singularity exec {params.bind} {params.bcftools_bin} bcftools stats {input.snp} {output.polymorph} > {output.stats}
+
+
         """
-## 4-5) ---------keep and extract R and S bulks ----------------
+## 4-6) ---------keep and extract R and S bulks ----------------
 rule keep_extract_bulks:
     input:
         parents="{outdir}/variant/gatk_all.filter_P_snps.vcf.gz".format(outdir=config["outdir"])
     output:
-        bulks="{outdir}/variant/gatk_all.filter_bulk.vcf.gz".format(outdir=config["outdir"])
+        bulks="{outdir}/variant/gatk_all.filter_bulk.vcf.gz".format(outdir=config["outdir"]),
+        stat = "{outdir}/variant/gatk_all.filter_bulk.stats.txt".format(outdir=config["outdir"])
     params:
         bcftools_bin = config["bcftools_bin"],
         bind = config["BIND"]
-    threads: 2
+    threads: 1
     shell:
         """
         singularity exec {params.bind} {params.bcftools_bin} bcftools view -s R,S {input.parents} -Oz -o {output.bulks}
         singularity exec {params.bind} {params.bcftools_bin} bcftools index {output.bulks} -t
+        singularity exec {params.bind} {params.bcftools_bin} bcftools stats -s R,S {input.parents} {output.bulks} > {output.stat}
         """
 
-## 4-6) -------------- statistics -------------------------------------
-rule gatk_stats:
-    input:
-        snp = "{outdir}/variant/gatk_all.filter_bulk.vcf.gz".format(outdir=config["outdir"])
-    output:
-        stat = "{outdir}/variant/gatk_all.keep_snps.stats.txt".format(outdir=config["outdir"])
-    params:
-        outdir       = config["outdir"],
-        idxbase      = config["REFPATH"] + "/" + config["GENOME"] ,
-        bind         = config["BIND"],
-        bwa_bin      = config["bwa_bin"],
-        bcftools_bin = config["bcftools_bin"]
-    threads: 2
-    shell:
-        """
-        singularity exec {params.bind} {params.bcftools_bin} bcftools stats -s P1,P2,R,S {input.snp} > {output.stat}
-        """
-
-## 4-7 ----------create a table file for Rscript ---------------
+## 4-7) ----------create a table file for Rscript ---------------
 rule vcf2table:
     input:
         bulks= "{outdir}/variant/gatk_all.filter_bulk.vcf.gz".format(outdir=config["outdir"])
